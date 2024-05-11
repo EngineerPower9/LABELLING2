@@ -6,7 +6,7 @@ import utils
 
 
 class KMeans:
-
+    # Incialització de la classe kmeans
     def __init__(self, X, K=1, options=None):
         """
          Constructor of KMeans class
@@ -14,12 +14,13 @@ class KMeans:
                  K (int): Number of cluster
                  options (dict): dictionary with options
             """
+        # Paràmetres de la funció kmeans
         self.num_iter = 0
         self.K = K
         self._init_X(X)
         self._init_options(options)  # DICT options
 
-
+    # Funció que inicialitza la matriu de punts
     def _init_X(self, X):
         """Initialization of all pixels, sets X as an array of data in vector form (PxD)
             Args:
@@ -27,8 +28,10 @@ class KMeans:
                     if matrix has more than 2 dimensions, the dimensionality of the sample space is the length of
                     the last dimension
         """
+        # Primer
         if not isinstance(X, np.ndarray):
             X = np.array(X)
+        # Convertim els valors del array en float64 o
         X = X.astype(np.float64)
 
         if X.ndim > 2:
