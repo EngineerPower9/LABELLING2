@@ -1,5 +1,5 @@
-__authors__ = ["1638317","1638317"]
-__group__ = '1'
+__authors__ = ["1638317","1634232","1635636"]
+__group__ = 'noneyet'
 
 import numpy as np
 import math
@@ -8,7 +8,7 @@ from scipy.spatial.distance import cdist
 
 
 class KNN:
-    def _init_(self, train_data, labels):
+    def __init__(self, train_data, labels):
         self._init_train(train_data)
         self.labels = np.array(labels)
 
