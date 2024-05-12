@@ -28,8 +28,6 @@ class KMeans:
                     if matrix has more than 2 dimensions, the dimensionality of the sample space is the length of
                     the last dimension
         """
-        print(X)
-
         # Primer mirem si está en forma de numpy array
         if not isinstance(X, np.ndarray):
             X = np.array(X)
@@ -55,7 +53,7 @@ class KMeans:
         if options is None:
             options = {}
         if 'km_init' not in options:
-            # Modifica la lògica del algorisme usada per fer el kmeans y buscar veins
+            # Modifica la lògica del algorisme usada per fer el kmeans y buscar veins al inici
             options['km_init'] = 'first'
         if 'verbose' not in options:
             # Flag usada per permetre missatges de control sobre els resultats
@@ -83,14 +81,14 @@ class KMeans:
             # Creem un set de files úniques
             unics = set()
             centroids = []
-            # Anem fila per fila mirant si està inclosa cada coombinació de RGB
+            # Anem fila per fila mirant si està inclosa cada combinació de RGB
             for row in self.X:
                 fila = tuple(row)
                 # Si trobem punts amb combinació RGB no incloses els incloem
                 if fila not in unics:
                     unics.add(fila)
                     centroids.append(row)
-                    # Comprobem que no ens passem de classes ja que cada
+                    # Comprobem que no ens passem de classes
                     if len(centroids) == self.K:
                         break
             # Si no obtenim suficients punts per a totes les classes que volem, provoquem un error

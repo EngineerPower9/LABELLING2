@@ -1,197 +1,214 @@
-__authors__ = '1497706, 1430797, 1467542'
-__group__ = 'DM.18'
+__authors__ = 'TO_BE_FILLED'
+__group__ = 'TO_BE_FILLED'
 
-import utils as utl
+import utl as utl
+
+from utils_data import read_dataset, read_extended_dataset, crop_images, Plot3DCloud, visualize_k_means
+
+import time
+import matplotlib.pyplot as plt
 import numpy as np
 import Kmeans as km
-import KNN as knn
-from utils_data import read_dataset, visualize_k_means, visualize_retrieval, Plot3DCloud, read_one_img
+from sklearn.cluster import KMeans
+from sklearn.neighbors import KNeighborsClassifier
 
+def Kmean_statistics(kmeans_class, images, Kmax):
+    wcds = []
+    iterations = []
+    times = []
 
-# Test Find_BestK modificando el umbral de calculo de la K de KMeans
-def diccionarioRopa(classes, datos):
-    # bucle para contar y clasificar los errores y lista de prints para imprimir el diccionario
-    for x in classes:
-        shirts = 0
-        dresses = 0
-        shorts = 0
-        sandals = 0
-        flip_flops = 0
-        handbags = 0
-        jeans = 0
-        socks = 0
-        heels = 0
-        for i in datos[x]:
-            if i == "Shirts":
-                shirts += 1
-            if i == "Dresses":
-                dresses += 1
-            if i == "Sandals":
-                sandals += 1
-            if i == "Flip Flops":
-                flip_flops += 1
-            if i == "Handbags":
-                handbags += 1
-            if i == "Jeans":
-                jeans += 1
-            if i == "Socks":
-                socks += 1
-            if i == "Shorts":
-                shorts += 1
-            if i == "Heels":
-                heels += 1
-        print(x)
-        print("shirts:")
-        print(shirts)
-        print("dresses:")
-        print(dresses)
-        print("sandals:")
-        print(sandals)
-        print("flip_flops:")
-        print(flip_flops)
-        print("handbags:")
-        print(handbags)
-        print("jeans:")
-        print(jeans)
-        print("socks:")
-        print(socks)
-        print("shorts:")
-        print(shorts)
-        print("heels:")
-        print(heels)
+    for k in range(2, Kmax+1):
+        start_time = time.time()
+        kmeans = kmeans_class(n_clusters=k, random_state=42)
+        kmeans.fit(images)
+        end_time = time.time()
 
+        wcds.append(kmeans.inertia_)  # WCD
+        iterations.append(kmeans.n_iter_)
+        times.append(end_time - start_time)
 
-def change_tolarance(test_imgs, option):
-    print("---------Calculo de la K ideal---------")
-    for x in test_imgs:
-        k_posible = []
-        print("-------")
-        for i in range(1, 10):
-            option['tolerance'] = i / 10
-            K_aux = km.KMeans(x, 1, option)
-            km.KMeans.select_findK_method(K_aux, 9)
-            k_posible.append(K_aux.K)
-            print("Tolerancia:" + str(option['tolerance']) + " Mejor K obtenida:" + str(K_aux.K))
-            if k_posible.count(K_aux.K) > 2:
-                K_millor = km.KMeans(x, K_aux.K, option)
-                km.KMeans.fit(K_millor)
-                break
-            if i == 9:
-                npK_posible = np.array(k_posible)
-                bestK = np.amin(npK_posible)
-                K_millor = km.KMeans(x, bestK, option)
-                km.KMeans.fit(K_millor)
+    plt.figure(figsize=(12, 4))
+    plt.subplot(131)
+    plt.plot(range(2, Kmax+1), wcds, marker='o')
+    plt.title('WCD by K')
+    plt.xlabel('K')
+    plt.ylabel('WCD')
 
+    plt.subplot(132)
+    plt.plot(range(2, Kmax+1), iterations, marker='o')
+    plt.title('Iterations by K')
+    plt.xlabel('K')
+    plt.ylabel('Iterations')
 
-def retrieval_by_shape(lista_formas, query):
-    index = []
-    i = 0
-    for image in lista_formas:
-        if query == image:
-            index.append(i)
-        i += 1
-    return index
+    plt.subplot(133)
+    plt.plot(range(2, Kmax+1), times, marker='o')
+    plt.title('Time to Converge by K')
+    plt.xlabel('K')
+    plt.ylabel('Time (s)')
 
+    plt.tight_layout()
+    plt.show()
 
-def get_shape_accuracy(lista_formas, query, test_shape_labels):
-    indices_knn = retrieval_by_shape(lista_formas, query)
-    indices_ground_truth = retrieval_by_shape(test_shape_labels, query)
-    aciertos = 0
-    errores = 0
-    for image in indices_knn:
-        if image in indices_ground_truth:
-            aciertos = aciertos + 1
-        else:
-            errores = errores + 1
-    Total = len(indices_ground_truth)
-    misses = Total - aciertos
-    percentateAciertos = aciertos / Total
-    percentateMisses = misses / Total
-    pocentajeErrores = errores / Total
-    print(aciertos, misses, errores)
-    print("Aciertos:" + str(percentateAciertos) + " Misses:" + str(percentateMisses) + " Errores:" + str(
-        pocentajeErrores))
+def Get_shape_accuracy(predicted_labels, true_labels):
+    correct_matches = sum(p == t for p, t in zip(predicted_labels, true_labels))
+    accuracy = (correct_matches / len(true_labels)) * 100
+    return accuracy
 
+def Get_color_accuracy(predicted_labels, true_labels):
+    total_score = 0
+    for pred, true in zip(predicted_labels, true_labels):
+        intersection = set(pred).intersection(set(true))
+        union = set(pred).union(set(true))
+        total_score += len(intersection) / len(union) if union else 0
 
-def retrieval_by_color(lista_colores, query):
-    index = []
-    imagenes = []
-    i = 0
-    for image in lista_colores:
-        if query in image:
-            index.append(i)
-        i += 1
-    return index
+    accuracy = (total_score / len(true_labels)) * 100
+    return accuracy
 
+def retrieval_by_color(image_list, color_labels, query_colors, percentage=False):
+    """
+    Recibe una lista de etiquetas de color (cada etiqueta puede contener múltiples colores y sus respectivos porcentajes),
+    y una lista de colores buscados. Retorna las imágenes cuyas etiquetas contienen los colores buscados, ordenadas
+    opcionalmente por el porcentaje de coincidencia de color.
 
-def test_color_accuracy(lista_colores, query, test_color_labels):
-    indices_kmeans = retrieval_by_color(lista_colores, query)
-    indices_ground_truth = retrieval_by_color(test_color_labels, query)
-    aciertos = 0
-    errores = 0
-    for image in indices_kmeans:
-        if image in indices_ground_truth:
-            aciertos = aciertos + 1
-        else:
-            errores = errores + 1
-    Total = len(indices_ground_truth)
-    misses = Total - aciertos
-    percentateAciertos = aciertos / Total
-    percentateMisses = misses / Total
-    pocentajeErrores = errores / Total
-    print(aciertos, misses, errores)
-    print("Aciertos:" + str(percentateAciertos) + " Misses:" + str(percentateMisses) + " Errores:" + str(
-        pocentajeErrores))
+    :param image_list: Lista de imágenes.
+    :param color_labels: Lista de etiquetas con colores y opcionalmente porcentajes.
+    :param query_colors: Lista de colores a buscar.
+    :param percentage: Booleano, si es True, se considera el porcentaje de color en el ordenamiento.
+    :return: Lista de imágenes ordenadas por relevancia de coincidencia de color.
+    """
+    matches = []
+    for index, colors in enumerate(color_labels):
+        match = False
+        total_percentage = 0
+        for color, pct in colors.items():
+            if color in query_colors:
+                match = True
+                if percentage:
+                    total_percentage += pct
+
+        if match:
+            matches.append((total_percentage, index) if percentage else index)
+
+    # Ordenamos por porcentaje si es requerido
+    if percentage:
+        matches.sort(reverse=True, key=lambda x: x[0])
+        return [image_list[i[1]] for i in matches]
+    else:
+        return [image_list[i] for i in matches]
+
+def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percentage=False):
+    """
+    Recibe una lista de etiquetas de forma (cada etiqueta puede incluir un porcentaje de vecinos K con la misma forma),
+    y una forma específica buscada. Retorna las imágenes cuyas etiquetas coinciden con la forma buscada, ordenadas
+    opcionalmente por el porcentaje de vecinos K.
+
+    :param image_list: Lista de imágenes.
+    :param shape_labels: Lista de etiquetas con formas y opcionalmente porcentaje de vecinos K con la misma forma.
+    :param query_shape: Forma específica a buscar.
+    :param k_neighbors_percentage: Booleano, si es True, se considera el porcentaje de vecinos K en el ordenamiento.
+    :return: Lista de imágenes ordenadas por relevancia de coincidencia de forma.
+    """
+    matches = []
+    for index, (shape, pct) in enumerate(shape_labels):
+        if shape == query_shape:
+            matches.append((pct, index) if k_neighbors_percentage else index)
+
+    # Ordenamos por porcentaje si es requerido
+    if k_neighbors_percentage:
+        matches.sort(reverse=True, key=lambda x: x[0])
+        return [image_list[i[1]] for i in matches]
+    else:
+        return [image_list[i] for i in matches]
+
+def retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage=True):
+    """
+    Función que combina la búsqueda por color y forma. Recibe listas de imágenes, etiquetas de color y forma,
+    una consulta de color, una consulta de forma y un flag que indica si se debe utilizar el porcentaje para
+    ordenar los resultados.
+
+    :param image_list: Lista de imágenes.
+    :param color_labels: Diccionario de etiquetas de color con porcentajes.
+    :param shape_labels: Diccionario de etiquetas de forma con porcentajes de vecinos K.
+    :param query_color: Lista de colores a buscar.
+    :param query_shape: Forma específica a buscar.
+    :param use_percentage: Si es True, ordena las imágenes por la suma de porcentajes de coincidencia de color y forma.
+    :return: Lista de imágenes que coinciden con los criterios de búsqueda, ordenadas por relevancia.
+    """
+    color_matches = retrieval_by_color(image_list, color_labels, query_color, percentage=use_percentage)
+    shape_matches = retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percentage=use_percentage)
+
+    # Intersección de resultados, considerando los índices de las imágenes
+    combined_indices = set([img[1] if use_percentage else img for img in color_matches]) & set([img[1] if use_percentage else img for img in shape_matches])
+
+    # Extraer y ordenar las imágenes resultantes
+    if use_percentage:
+        # Extraemos pares (suma de porcentajes, índice) para las coincidencias
+        final_matches = [(color_labels[idx][1] + shape_labels[idx][1], idx) for idx in combined_indices]
+        final_matches.sort(reverse=True, key=lambda x: x[0])  # Ordenamos por la suma de porcentajes
+        return [image_list[idx] for _, idx in final_matches]
+    else:
+        return [image_list[idx] for idx in combined_indices]
+
+def calculate_accuracy(predictions, ground_truth):
+    correct = np.sum(predictions == ground_truth)
+    return correct / len(ground_truth) * 100
 
 
 if __name__ == '__main__':
-
     # Load all the images and GT
     train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, \
     test_color_labels = read_dataset(root_folder='./images/', gt_json='./images/gt.json')
 
-    # List with all the existant classes
+    # test_color_labels s'encarrega de cargar el dataset de colors per probar
+    # train_imgs son totes les imatges que s'susaran per al entrenament del algosrime
+    # train_class_labels donarà les labels per al entreno
+    # train_color_labels donarà les labels per al entreno
+
+    #print(train_imgs) # Carrega matrius de pixels possibles
+    #print(test_imgs)  # Carrega matrius de pixels de cada foto disponible en ordre
+    #print(train_class_labels) # Carrega totes les labels de classe disponibles
+    #print(test_class_labels) # Carrega les labels de cada foto en ordre
+    #print(train_color_labels) # Carrega totes els colors disponibles
+    #print(test_color_labels) # Carrega els colors de cada foto en ordre
+
+    # List with all the existent classes
     classes = list(set(list(train_class_labels) + list(test_class_labels)))
 
-    option = {}
-    datos = {}
-    option['km_init'] = 'colors'
-    option['fitting'] = 'fisher'
-    option['tolerance'] = 0.2
+    # Load extended ground truth
+    imgs, class_labels, color_labels, upper, lower, background = read_extended_dataset()
+    cropped_images = crop_images(imgs, upper, lower)
 
-    predict_colores_KMeans = []
-    list_total = []
+    # You can start coding your functions here
+    # Creem un clase KMeans, a la qual li fiquem la quantitat k de classes que volem amb opcions per defecte
 
-    # Test Shape - Analisis cualitativo y cuantitativo.
-    knn_list_train = knn.KNN(train_imgs, train_class_labels)
-    lista_formas = knn_list_train.predict(test_imgs, 3)
-    for roba in classes:
-        # print("---------" + str(roba) + "--------")
-        get_shape_accuracy(lista_formas, roba, test_class_labels)
-
-        # codigo para gardar en un diccionario el resultado de la bçusqueda
-        index_roba = retrieval_by_shape(lista_formas, roba)
-        resultats = []
-        for index in index_roba:
-            resultats.append(test_class_labels[index])
-        datos[roba] = resultats
-    diccionarioRopa(classes, datos)
-    # Analizar K en funcion a la tolerancia
-    change_tolarance(test_imgs, option)
-
-    print("---------Calculo de Colores---------")
-    for x in test_imgs:
-        K_aux = km.KMeans(x, 1, option)
-        km.KMeans.find_bestK(K_aux, 4)  # Se ha modificado el valor de K_Max para obtener diferentes resultados
-        km.KMeans.fit(K_aux)
-        predict_colores_KMeans.append(km.get_colors(K_aux.centroids))
+    temp = []
+    K_aux = km.KMeans(train_imgs[0])
+    km.KMeans.find_bestK(K_aux, len(classes))
+    km.KMeans.fit(K_aux)
+    temp.append(km.get_colors(K_aux.centroids))
+    print(temp)
 
     for color in utl.colors:
         index = []
         imagenes = []
         print("---------" + str(color) + "--------")
         i = 0
-        index = retrieval_by_color(predict_colores_KMeans, color)
-        for c in index:
+        for c in retrieval_by_color(temp, train_color_labels,color):
             imagenes.append((test_imgs[c]))
-        test_color_accuracy(predict_colores_KMeans, color, test_color_labels)
+        Get_color_accuracy(temp, test_color_labels)
+
+    ax = Plot3DCloud(K_aux)
+    plt.show()
+
+    color_accuracy = calculate_accuracy(kmeans_labels, test_color_labels)  # Simplified accuracy
+    print(f"Color Clustering Accuracy: {color_accuracy:.2f}%")
+
+    # KNN for shape classification
+    knn_classifier = KNeighborsClassifier(n_neighbors=3)
+    knn_classifier.fit(train_imgs, train_class_labels)
+    knn_predictions = knn_classifier.predict(test_imgs)
+    shape_accuracy = calculate_accuracy(knn_predictions, test_class_labels)
+    print(f"Shape Classification Accuracy: {shape_accuracy:.2f}%")
+
+
+
