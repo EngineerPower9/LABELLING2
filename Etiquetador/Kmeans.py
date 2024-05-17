@@ -201,7 +201,9 @@ class KMeans:
                     self.K = i - 1
                     break
 
-        # Borrat el else
+
+
+
 
 # Calcula la distància entre cada píxel i cada centròid
 def distance(X, C):

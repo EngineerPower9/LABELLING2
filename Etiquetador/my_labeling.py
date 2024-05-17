@@ -76,25 +76,29 @@ def retrieval_by_color(image_list, color_labels, query_colors, percentage=False)
     :param percentage: Booleano, si es True, se considera el porcentaje de color en el ordenamiento.
     :return: Lista de imágenes ordenadas por relevancia de coincidencia de color.
     """
-    matches = []
-    for index, colors in enumerate(color_labels):
-        match = False
-        total_percentage = 0
-        for color, pct in colors.items():
-            if color in query_colors:
-                match = True
-                if percentage:
-                    total_percentage += pct
+    images_return = []
+    porcentajes_list = []
+    for i, image in enumerate(image_list):
+        if query_colors in color_labels[i]:
+            # CONTAMOS VECES QUE APARECE
+            veces = list(color_labels[i]).count(query_colors)
 
-        if match:
-            matches.append((total_percentage, index) if percentage else index)
+            # Porcentaje
+            porcentaje = (veces / len(color_labels[i])) * 100
+            if k_neighbors_percentage != False:
+                if porcentaje >= k_neighbors_percentage:
+                    porcentajes_list.append([i, porcentaje])
+            else:
+                porcentajes_list.append([i, porcentaje])
 
-    # Ordenamos por porcentaje si es requerido
-    if percentage:
-        matches.sort(reverse=True, key=lambda x: x[0])
-        return [image_list[i[1]] for i in matches]
-    else:
-        return [image_list[i] for i in matches]
+    porcentajes_ordenados = sorted(porcentajes_list, key=lambda x: x[1])  # Ordena segun porcentajes
+
+    print(porcentajes_ordenados)
+
+    for indices in porcentajes_ordenados:
+        images_return.append(image_list[indices[0]])
+
+    return images_return
 
 def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percentage=False):
     """
@@ -182,14 +186,25 @@ if __name__ == '__main__':
     cropped_images = crop_images(imgs, upper, lower)
 
 
+    ############################TESTING retrieval_by_color##############################################################
+
+    data_means = KMeans(train_imgs, train_color_labels)
+    centroid = data_means.get_centroids()
+    shape_labels = km.get_colors(centroid)
+    query_shape = "Red"
+    k_neighbors_percentage = False
+
+    retrieval_by_color(train_imgs, shape_labels, query_shape, k_neighbors_percentage)
+
+    ############################END TESTING retrieval_by_color##########################################################
 
     ############################TESTING retrieval_by_shape##############################################################
 
     imgsGray = rgb2gray(train_imgs)
-    imgsGray = rgb2gray(imgs)
+    imgsGray1 = rgb2gray(imgs)
     Knn_test = KNN(imgsGray, train_class_labels)
     k = 5 #Por el momento
-    neighbours = Knn_test.get_k_neighbours(imgsGray, k)
+    neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
 
     image_list = imgsGray
     shape_labels = neighbours  
@@ -199,3 +214,26 @@ if __name__ == '__main__':
     retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percentage)
 
     ############################END TESTING retrieval_by_shape##########################################################
+
+    ############################TESTING retrieval−combined##############################################################
+
+    imgsGray = rgb2gray(train_imgs)
+    imgsGray1 = rgb2gray(imgs)
+    Knn_test = KNN(imgsGray, train_class_labels)
+    k = 5  # Por el momento
+    neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
+    image_list = imgsGray
+    shape_labels = neighbours
+    query_shape = "Dresses"
+
+    data_means = KMeans(train_imgs, train_color_labels)
+    centroid = data_means.get_centroids()
+    shape_labels = km.get_colors(centroid)
+    query_color = "Red"
+    k_neighbors_percentage = False
+    use_percentage = False
+
+
+    retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage)
+
+    ############################END TESTING retrieval−combined##########################################################
