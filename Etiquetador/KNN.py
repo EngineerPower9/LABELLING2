@@ -8,10 +8,9 @@ from scipy.spatial.distance import cdist
 
 
 class KNN:
-    def _init_(self, train_data, labels):
+    def __init__(self, train_data, labels):
         self._init_train(train_data)
         self.labels = np.array(labels)
-
 
     def _init_train(self, train_data):
         """
@@ -70,6 +69,7 @@ class KNN:
 
         self.neighbors = np.array(returns)
         #self.neighbors = np.random.randint(k, size=[test_data.shape[0], k])
+        return self.neighbors
 
     def get_class(self):
         """
@@ -103,7 +103,7 @@ class KNN:
                             break
                 else:
                     values_res.append(valors[0])
-
+        print(np.array(values_res))
         return np.array(values_res)
 
 
@@ -118,6 +118,5 @@ class KNN:
         :param k: the number of neighbors to look at
         :return: the output form get_class a Nx1 vector with the predicted shape for each test image
         """
-
         self.get_k_neighbours(test_data, k)
         return self.get_class()
