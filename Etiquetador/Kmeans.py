@@ -18,9 +18,7 @@ class KMeans:
         self.num_iter = 0  # Nombre d'iteracions que farem per buscar la millor distribució de classes
         self.K = K  # Nombre de classes a buscar
         self._init_X(X)  # Matriu de RGB
-        self._init_options(options)  # DICT options que decideixen com modifica la forma de buscar classes
-
-    # Funció que inicialitza la matriu de punts
+        self._init_options(options)  # DICT options que decideixen com modifica la forma de buscar classes    # Funció que inicialitza la matriu de punts
     def _init_X(self, X):
         """Initialization of all pixels, sets X as an array of data in vector form (PxD)
             Args:

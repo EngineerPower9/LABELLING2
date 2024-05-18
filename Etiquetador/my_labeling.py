@@ -6,11 +6,10 @@ from utils_data import read_dataset, read_extended_dataset, crop_images, Plot3DC
 import time
 import matplotlib.pyplot as plt
 import numpy as np
-import Kmeans as km
 from KNN import __authors__, __group__, KNN
 from utils import *
-from sklearn.cluster import KMeans
-from sklearn.neighbors import KNeighborsClassifier
+from Kmeans import __authors__, __group__, KMeans, distance, get_colors
+
 
 def Kmean_statistics(kmeans_class, images, Kmax):
     wcds = []
@@ -88,6 +87,7 @@ def retrieval_by_color(image_list, color_labels, query_colors, percentage=False)
             if k_neighbors_percentage != False:
                 if porcentaje >= k_neighbors_percentage:
                     porcentajes_list.append([i, porcentaje])
+                    print(porcentajes_list)
             else:
                 porcentajes_list.append([i, porcentaje])
 
@@ -138,8 +138,6 @@ def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percen
 
     return images_return
 
-
-
 def retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage=True):
     """
     Función que combina la búsqueda por color y forma. Recibe listas de imágenes, etiquetas de color y forma,
@@ -154,20 +152,8 @@ def retrieval_combined(image_list, color_labels, shape_labels, query_color, quer
     :param use_percentage: Si es True, ordena las imágenes por la suma de porcentajes de coincidencia de color y forma.
     :return: Lista de imágenes que coinciden con los criterios de búsqueda, ordenadas por relevancia.
     """
-    color_matches = retrieval_by_color(image_list, color_labels, query_color, percentage=use_percentage)
-    shape_matches = retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percentage=use_percentage)
-
-    # Intersección de resultados, considerando los índices de las imágenes
-    combined_indices = set([img[1] if use_percentage else img for img in color_matches]) & set([img[1] if use_percentage else img for img in shape_matches])
-
-    # Extraer y ordenar las imágenes resultantes
-    if use_percentage:
-        # Extraemos pares (suma de porcentajes, índice) para las coincidencias
-        final_matches = [(color_labels[idx][1] + shape_labels[idx][1], idx) for idx in combined_indices]
-        final_matches.sort(reverse=True, key=lambda x: x[0])  # Ordenamos por la suma de porcentajes
-        return [image_list[idx] for _, idx in final_matches]
-    else:
-        return [image_list[idx] for idx in combined_indices]
+    retrieval_by_shape(image_list, shape_labels, query_shape, use_percentage)
+    retrieval_by_color(image_list, color_labels, query_colors, use_percentage)
 
 def calculate_accuracy(predictions, ground_truth):
     correct = np.sum(predictions == ground_truth)
@@ -188,13 +174,21 @@ if __name__ == '__main__':
 
     ############################TESTING retrieval_by_color##############################################################
 
-    data_means = KMeans(train_imgs, train_color_labels)
-    centroid = data_means.get_centroids()
-    shape_labels = km.get_colors(centroid)
+    # Crea una instancia de KMeans con los parámetros adecuados
+    labels_function = []
+    for analize in imgs:
+        options = {}
+        colors_list = []
+        km = KMeans(analize)
+        KMeans.find_bestK(km, len(colors))
+        labels = get_colors(km.centroids)
+        labels_function.append(labels)
+
+
     query_shape = "Red"
     k_neighbors_percentage = False
 
-    retrieval_by_color(train_imgs, shape_labels, query_shape, k_neighbors_percentage)
+    retrieval_by_color(imgs, labels_function, query_shape, k_neighbors_percentage)
 
     ############################END TESTING retrieval_by_color##########################################################
 

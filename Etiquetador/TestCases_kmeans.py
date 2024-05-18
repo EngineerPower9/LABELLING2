@@ -40,6 +40,8 @@ class TestCases(unittest.TestCase):
 
     def test_05_get_labels(self):
         for ix, input in enumerate(self.test_cases['input']):
+            #km = KMeans(input, 4
+            print(input)
             km = KMeans(input, self.test_cases['K'][ix])
             km._init_centroids()
             km.get_labels()

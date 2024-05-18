@@ -1,9 +1,7 @@
 import pickle
 import unittest
-
 from KNN import __authors__, __group__, KNN
 from utils import *
-
 
 class TestCases(unittest.TestCase):
 
