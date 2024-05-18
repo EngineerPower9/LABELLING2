@@ -3,6 +3,8 @@ __group__ = 'TO_BE_FILLED'
 
 import utl as utl
 
+from Etiquetador.KNN import KNN
+from Etiquetador.utils import rgb2gray
 from utils_data import read_dataset, read_extended_dataset, crop_images, Plot3DCloud, visualize_k_means
 
 import time
@@ -17,7 +19,7 @@ def Kmean_statistics(kmeans_class, images, Kmax):
     iterations = []
     times = []
 
-    for k in range(2, Kmax+1):
+    for k in range(2, Kmax + 1):
         start_time = time.time()
         kmeans = kmeans_class(n_clusters=k, random_state=42)
         kmeans.fit(images)
@@ -29,19 +31,19 @@ def Kmean_statistics(kmeans_class, images, Kmax):
 
     plt.figure(figsize=(12, 4))
     plt.subplot(131)
-    plt.plot(range(2, Kmax+1), wcds, marker='o')
+    plt.plot(range(2, Kmax + 1), wcds, marker='o')
     plt.title('WCD by K')
     plt.xlabel('K')
     plt.ylabel('WCD')
 
     plt.subplot(132)
-    plt.plot(range(2, Kmax+1), iterations, marker='o')
+    plt.plot(range(2, Kmax + 1), iterations, marker='o')
     plt.title('Iterations by K')
     plt.xlabel('K')
     plt.ylabel('Iterations')
 
     plt.subplot(133)
-    plt.plot(range(2, Kmax+1), times, marker='o')
+    plt.plot(range(2, Kmax + 1), times, marker='o')
     plt.title('Time to Converge by K')
     plt.xlabel('K')
     plt.ylabel('Time (s)')
@@ -76,25 +78,29 @@ def retrieval_by_color(image_list, color_labels, query_colors, percentage=False)
     :param percentage: Booleano, si es True, se considera el porcentaje de color en el ordenamiento.
     :return: Lista de imágenes ordenadas por relevancia de coincidencia de color.
     """
-    matches = []
-    for index, colors in enumerate(color_labels):
-        match = False
-        total_percentage = 0
-        for color, pct in colors.items():
-            if color in query_colors:
-                match = True
-                if percentage:
-                    total_percentage += pct
+    images_return = []
+    porcentajes_list = []
+    for i, image in enumerate(image_list):
+        if query_colors in color_labels[i]:
+            # CONTAMOS VECES QUE APARECE
+            veces = list(color_labels[i]).count(query_colors)
 
-        if match:
-            matches.append((total_percentage, index) if percentage else index)
+            # Porcentaje
+            porcentaje = (veces / len(color_labels[i])) * 100
+            if k_neighbors_percentage != False:
+                if porcentaje >= k_neighbors_percentage:
+                    porcentajes_list.append([i, porcentaje])
+            else:
+                porcentajes_list.append([i, porcentaje])
 
-    # Ordenamos por porcentaje si es requerido
-    if percentage:
-        matches.sort(reverse=True, key=lambda x: x[0])
-        return [image_list[i[1]] for i in matches]
-    else:
-        return [image_list[i] for i in matches]
+    porcentajes_ordenados = sorted(porcentajes_list, key=lambda x: x[1])  # Ordena segun porcentajes
+
+    print(porcentajes_ordenados)
+
+    for indices in porcentajes_ordenados:
+        images_return.append(image_list[indices[0]])
+
+    return images_return
 
 def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percentage=False):
     """
@@ -108,17 +114,29 @@ def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percen
     :param k_neighbors_percentage: Booleano, si es True, se considera el porcentaje de vecinos K en el ordenamiento.
     :return: Lista de imágenes ordenadas por relevancia de coincidencia de forma.
     """
-    matches = []
-    for index, (shape, pct) in enumerate(shape_labels):
-        if shape == query_shape:
-            matches.append((pct, index) if k_neighbors_percentage else index)
+    images_return = []
+    porcentajes_list = []
+    for i, image in enumerate(image_list):
+        if query_shape in shape_labels[i]:
+            # CONTAMOS VECES QUE APARECE
+            veces = list(shape_labels[i]).count(query_shape)
 
-    # Ordenamos por porcentaje si es requerido
-    if k_neighbors_percentage:
-        matches.sort(reverse=True, key=lambda x: x[0])
-        return [image_list[i[1]] for i in matches]
-    else:
-        return [image_list[i] for i in matches]
+            # Porcentaje
+            porcentaje = (veces / len(shape_labels[i])) * 100
+            if k_neighbors_percentage != False:
+                if porcentaje >= k_neighbors_percentage:
+                    porcentajes_list.append([i, porcentaje])
+            else:
+                porcentajes_list.append([i, porcentaje])
+
+    porcentajes_ordenados = sorted(porcentajes_list, key=lambda x: x[1])  # Ordena segun porcentajes
+
+    print(porcentajes_ordenados)
+
+    for indices in porcentajes_ordenados:
+        images_return.append(image_list[indices[0]])
+
+    return images_return
 
 def retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage=True):
     """
@@ -181,34 +199,60 @@ if __name__ == '__main__':
     # You can start coding your functions here
     # Creem un clase KMeans, a la qual li fiquem la quantitat k de classes que volem amb opcions per defecte
 
-    temp = []
-    K_aux = km.KMeans(train_imgs[0])
-    km.KMeans.find_bestK(K_aux, len(classes))
-    km.KMeans.fit(K_aux)
-    temp.append(km.get_colors(K_aux.centroids))
-    print(temp)
 
-    for color in utl.colors:
-        index = []
-        imagenes = []
-        print("---------" + str(color) + "--------")
-        i = 0
-        for c in retrieval_by_color(temp, train_color_labels,color):
-            imagenes.append((test_imgs[c]))
-        Get_color_accuracy(temp, test_color_labels)
+    # Retrieval by color
+    # Aplicar KMeans
+    n_clusters = 5  # Ajusta el número de clusters según sea necesario
+    data_means = KMeans(n_clusters=n_clusters)
+    data_means.fit(train_imgs)
+    centroids = data_means.cluster_centers_
 
-    ax = Plot3DCloud(K_aux)
-    plt.show()
+    # Obtener etiquetas de color
+    shape_labels = get_colors(centroids)
+    query_color = "Red"
+    k_neighbors_percentage = False
 
-    color_accuracy = calculate_accuracy(kmeans_labels, test_color_labels)  # Simplified accuracy
-    print(f"Color Clustering Accuracy: {color_accuracy:.2f}%")
+    # Recuperar imágenes por color
+    retrieved_images = retrieval_by_color(train_imgs, shape_labels, query_color, k_neighbors_percentage)
 
-    # KNN for shape classification
-    knn_classifier = KNeighborsClassifier(n_neighbors=3)
-    knn_classifier.fit(train_imgs, train_class_labels)
-    knn_predictions = knn_classifier.predict(test_imgs)
-    shape_accuracy = calculate_accuracy(knn_predictions, test_class_labels)
-    print(f"Shape Classification Accuracy: {shape_accuracy:.2f}%")
+    # Mostrar resultados (opcional)
+    for img in retrieved_images:
+        plt.imshow(img)
+        plt.show()
+
+    # Retrieval by shape
+    imgsGray = rgb2gray(train_imgs)
+    imgsGray1 = rgb2gray(imgs)
+    Knn_test = KNN(imgsGray, train_class_labels)
+    k = 5  # Por el momento
+    neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
+
+    image_list = imgsGray
+    shape_labels = neighbours
+    query_shape = "Dresses"
+    k_neighbors_percentage = 30
+
+    retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percentage)
+
+
+    # Retrieval combined
+    imgsGray = rgb2gray(train_imgs)
+    imgsGray1 = rgb2gray(imgs)
+    Knn_test = KNN(imgsGray, train_class_labels)
+    k = 5  # Por el momento
+    neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
+    image_list = imgsGray
+    shape_labels = neighbours
+    query_shape = "Dresses"
+
+    data_means = KMeans(train_imgs, train_color_labels)
+    centroid = data_means.get_centroids()
+    shape_labels = km.get_colors(centroid)
+    query_color = "Red"
+    k_neighbors_percentage = False
+    use_percentage = False
+
+    retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage)
 
 
 
