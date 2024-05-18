@@ -174,6 +174,7 @@ if __name__ == '__main__':
 
     ############################TESTING retrieval_by_color##############################################################
 
+def test_retrieval_by_color():
     # Crea una instancia de KMeans con los parámetros adecuados
     labels_function = []
     for analize in imgs:
@@ -193,14 +194,14 @@ if __name__ == '__main__':
     ############################END TESTING retrieval_by_color##########################################################
 
     ############################TESTING retrieval_by_shape##############################################################
-
+def test_retrieval_by_shape():
     imgsGray = rgb2gray(train_imgs)
     imgsGray1 = rgb2gray(imgs)
-    Knn_test = KNN(imgsGray, train_class_labels)
+    Knn_test = KNN(imgsGray1, train_class_labels)
     k = 5 #Por el momento
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
 
-    image_list = imgsGray
+    image_list = imgsGray1
     shape_labels = neighbours  
     query_shape = "Dresses"
     k_neighbors_percentage = 30
@@ -210,23 +211,27 @@ if __name__ == '__main__':
     ############################END TESTING retrieval_by_shape##########################################################
 
     ############################TESTING retrieval−combined##############################################################
+def retrieval_combined():
+    # Crea una instancia de KMeans con los parámetros adecuados
+    labels_function = []
+    for analize in imgs:
+        options = {}
+        colors_list = []
+        km = KMeans(analize)
+        KMeans.find_bestK(km, len(colors))
+        labels = get_colors(km.centroids)
+        labels_function.append(labels)
 
     imgsGray = rgb2gray(train_imgs)
     imgsGray1 = rgb2gray(imgs)
-    Knn_test = KNN(imgsGray, train_class_labels)
+    Knn_test = KNN(imgsGray1, train_class_labels)
     k = 5  # Por el momento
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
-    image_list = imgsGray
+    image_list = imgsGray1
     shape_labels = neighbours
     query_shape = "Dresses"
-
-    data_means = KMeans(train_imgs, train_color_labels)
-    centroid = data_means.get_centroids()
-    shape_labels = km.get_colors(centroid)
     query_color = "Red"
-    k_neighbors_percentage = False
     use_percentage = False
-
 
     retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage)
 
