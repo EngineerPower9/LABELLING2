@@ -159,7 +159,6 @@ def calculate_accuracy(predictions, ground_truth):
     correct = np.sum(predictions == ground_truth)
     return correct / len(ground_truth) * 100
 
-
 if __name__ == '__main__':
     # Load all the images and GT
     train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, \
@@ -171,11 +170,9 @@ if __name__ == '__main__':
     imgs, class_labels, color_labels, upper, lower, background = read_extended_dataset()
     cropped_images = crop_images(imgs, upper, lower)
 
+#########################test_retrieval_by_color()#########################
 
-    ############################TESTING retrieval_by_color##############################################################
-
-def test_retrieval_by_color():
-    # Crea una instancia de KMeans con los parámetros adecuados
+# Crea una instancia de KMeans con los parámetros adecuados
     labels_function = []
     for analize in imgs:
         options = {}
@@ -191,10 +188,10 @@ def test_retrieval_by_color():
 
     retrieval_by_color(imgs, labels_function, query_shape, k_neighbors_percentage)
 
-    ############################END TESTING retrieval_by_color##########################################################
+###########################################################################
 
-    ############################TESTING retrieval_by_shape##############################################################
-def test_retrieval_by_shape():
+#########################test_retrieval_by_shape()#########################
+
     imgsGray = rgb2gray(train_imgs)
     imgsGray1 = rgb2gray(imgs)
     Knn_test = KNN(imgsGray1, train_class_labels)
@@ -202,17 +199,15 @@ def test_retrieval_by_shape():
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
 
     image_list = imgsGray1
-    shape_labels = neighbours  
+    shape_labels = neighbours
     query_shape = "Dresses"
     k_neighbors_percentage = 30
 
     retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percentage)
 
-    ############################END TESTING retrieval_by_shape##########################################################
+###########################################################################
 
-    ############################TESTING retrieval−combined##############################################################
-def retrieval_combined():
-    # Crea una instancia de KMeans con los parámetros adecuados
+#########################test_retrieval_combined()#########################
     labels_function = []
     for analize in imgs:
         options = {}
@@ -234,5 +229,6 @@ def retrieval_combined():
     use_percentage = False
 
     retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage)
+###########################################################################
 
-    ############################END TESTING retrieval−combined##########################################################
+
