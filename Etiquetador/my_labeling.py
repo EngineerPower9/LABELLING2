@@ -116,6 +116,7 @@ def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percen
 
     images_return = []
     porcentajes_list = []
+    index = []
     for i, image in enumerate(image_list):
         if query_shape in shape_labels[i]:
             #CONTAMOS VECES QUE APARECE
@@ -128,8 +129,9 @@ def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percen
                     porcentajes_list.append([i, porcentaje])
             else:
                 porcentajes_list.append([i, porcentaje])
+            index.append(i)
 
-    porcentajes_ordenados = sorted(porcentajes_list, key=lambda x:x[1]) #Ordena segun porcentajes
+    porcentajes_ordenados = sorted(porcentajes_list, key=lambda x: x[1], reverse=True) #Ordena segun porcentajes
 
 
     #print(porcentajes_ordenados)
@@ -137,7 +139,7 @@ def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percen
     for indices in porcentajes_ordenados:
         images_return.append(image_list[indices[0]])
 
-    return images_return, porcentajes_ordenados
+    return images_return, porcentajes_ordenados, index
 
 def retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage=True):
     """
@@ -160,14 +162,17 @@ def retrieval_combined(image_list, color_labels, shape_labels, query_color, quer
     #color0 y shape0 contiene las imagenes correspondientes.
     #print(shape1, color1)
     index = []
-    imgFinal = []
+    images_return = []
+    porcentajes_ordenados = []
 
     for i, shape in enumerate(shape1):
         for j, color in enumerate(color1): #Si la imatge està en els dos casos la retornarà
             if color[0] == shape[0]:
                 index.append(color[0])
-                imgFinal.append(image_list[color[0]])
-    return index
+                images_return.append(image_list[color[0]])
+                porcentajes_ordenados.append(color0[j]*shape0[i])
+
+    return images_return, porcentajes_ordenados
 
 def calculate_accuracy(predictions, ground_truth):
     correct = np.sum(predictions == ground_truth)
@@ -216,20 +221,23 @@ if __name__ == '__main__':
     imgsGray = rgb2gray(train_imgs)
     imgsGray1 = rgb2gray(imgs)
 
-    Knn_test = KNN(imgsGray1, train_class_labels)
-    k = 100 #Por el momento
+    Knn_test = KNN(imgsGray, train_class_labels)
+    k = 15 #Por el momento
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
 
-    image_list = imgsGray1
+    #image_list = imgsGray1
     shape_labels = neighbours
 
     # Recuperación por forma
-    query_shape = "Shorts"
-    k_neighbors_percentage = 30
-    result_imgs, result_info = retrieval_by_shape(imgsGray1, neighbours, query_shape)
-
+    query_shape = "Dresses"
+    k_neighbors_percentage = False
+    result_imgs, result_info,index = retrieval_by_shape(imgsGray1, neighbours, query_shape)
+    result_imgs_show = []
+    for i in index:
+        result_imgs_show.append(imgs[i])
     # Visualización
-    visualize_retrieval(result_imgs, 10)
+
+    visualize_retrieval(result_imgs_show, 10, result_info, None, 'Resultados por Forma')
 
     # Calcular precisión de forma
     predicted_shape_labels = neighbours[:len(test_class_labels)]  # Asegurarse de alinear las longitudes
@@ -253,12 +261,13 @@ if __name__ == '__main__':
     Knn_test = KNN(imgsGray1, train_class_labels)
     k = 5  # Por el momento
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
-    image_list = imgsGray1
+    image_list = imgs
     shape_labels = neighbours
     query_shape = "Dresses"
     query_color = "Red"
     use_percentage = False
 
-    index = retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage)
-    print(index)
+    result_imgs, result_info = retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage)
+    visualize_retrieval(result_imgs, 10, result_info, None, 'Combinados')
+
 ###########################################################################
