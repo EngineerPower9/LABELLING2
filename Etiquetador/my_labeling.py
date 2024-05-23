@@ -101,7 +101,7 @@ def retrieval_by_color(image_list, color_labels, query_colors, percentage=False)
 
     return images_return, porcentajes_ordenados
 
-def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percentage=False):
+def retrieval_by_shape(image_list, shape_labels, query_shape, percentage=False):
     """
     Recibe una lista de etiquetas de forma (cada etiqueta puede incluir un porcentaje de vecinos K con la misma forma),
     y una forma específica buscada. Retorna las imágenes cuyas etiquetas coinciden con la forma buscada, ordenadas
@@ -124,8 +124,8 @@ def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percen
 
             #Porcentaje
             porcentaje = (veces/len(shape_labels[i]))*100
-            if k_neighbors_percentage != False:
-                if porcentaje >= k_neighbors_percentage:
+            if percentage != False:
+                if porcentaje >= percentage:
                     porcentajes_list.append([i, porcentaje])
             else:
                 porcentajes_list.append([i, porcentaje])
@@ -133,16 +133,13 @@ def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percen
 
     porcentajes_ordenados = sorted(porcentajes_list, key=lambda x: x[1], reverse=True) #Ordena segun porcentajes
 
-
-    #print(porcentajes_ordenados)
-
     for indices in porcentajes_ordenados:
         images_return.append(image_list[indices[0]])
         index.append(indices[0])
 
     return images_return, porcentajes_ordenados, index
 
-def retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage=False):
+def retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, percentage=False):
     """
     Función que combina la búsqueda por color y forma. Recibe listas de imágenes, etiquetas de color y forma,
     una consulta de color, una consulta de forma y un flag que indica si se debe utilizar el porcentaje para
@@ -156,8 +153,8 @@ def retrieval_combined(image_list, color_labels, shape_labels, query_color, quer
     :param use_percentage: Si es True, ordena las imágenes por la suma de porcentajes de coincidencia de color y forma.
     :return: Lista de imágenes que coinciden con los criterios de búsqueda, ordenadas por relevancia.
     """
-    shape0, shape1, index = retrieval_by_shape(rgb2gray(image_list), shape_labels, query_shape, use_percentage)
-    color0, color1 = retrieval_by_color(image_list, color_labels, query_color, use_percentage)
+    shape0, shape1, index = retrieval_by_shape(rgb2gray(image_list), shape_labels, query_shape, percentage)
+    color0, color1 = retrieval_by_color(image_list, color_labels, query_color, percentage)
 
     #Color1 y shape1 contiene los porcentajes con los indices de las imagenes.
     #color0 y shape0 contiene las imagenes correspondientes.
@@ -169,7 +166,7 @@ def retrieval_combined(image_list, color_labels, shape_labels, query_color, quer
     for i, shape in enumerate(shape1):
         for j, color in enumerate(color1): #Si la imatge està en els dos casos la retornarà
             if color[0] == shape[0]:
-                porcentaje = (color1[j][1]*shape1[i][1])/100
+                porcentaje = (color1[j][1]+shape1[i][1])/2
                 index.append(color[0])
                 images_return.append(image_list[color[0]])
                 porcentajes_ordenados.append([color[0], porcentaje])
@@ -187,7 +184,8 @@ def calculate_accuracy(predictions, ground_truth):
 def test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
     # Crea una instancia de KMeans con los parámetros adecuados
     labels_function = []
-    for analize in imgs:
+
+    for analize in cropped_images:
         options = {}
         colors_list = []
         km = KMeans(analize)
@@ -195,11 +193,11 @@ def test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, 
         labels = get_colors(km.centroids)
         labels_function.append(labels)
 
+
     # Recuperación por color
-    query_color = "Pink"
+    query_color = "Red"
     k_neighbors_percentage = False
     result_imgs, result_info = retrieval_by_color(imgs, labels_function, query_color, k_neighbors_percentage)
-    # print(result_imgs)
     # Visualización
     visualize_retrieval(result_imgs, 10, result_info, None, 'Resultados por Color')
 
@@ -209,23 +207,22 @@ def test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, 
     print(f'Color Accuracy: {color_accuracy:.2f}%')
 
 def test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
+
     imgsGray = rgb2gray(train_imgs)
-    imgsGray1 = rgb2gray(imgs)
+    imgsGray1 = rgb2gray(test_imgs)
 
     Knn_test = KNN(imgsGray, train_class_labels)
     k = 15  # Por el momento
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
-
-    # image_list = imgsGray1
     shape_labels = neighbours
 
     # Recuperación por forma
-    query_shape = "Dresses"
+    query_shape = "Shorts"
     k_neighbors_percentage = False
-    result_imgs, result_info, index = retrieval_by_shape(imgsGray1, neighbours, query_shape)
+    result_imgs, result_info, index = retrieval_by_shape(imgsGray1, neighbours, query_shape, k_neighbors_percentage)
     result_imgs_show = []
     for i in index:
-        result_imgs_show.append(imgs[i])
+        result_imgs_show.append(test_imgs[i])
     # Visualización
 
     visualize_retrieval(result_imgs_show, 15, result_info, None, 'Resultados por Forma')
@@ -248,19 +245,18 @@ def test_test_retrieval_combined(train_imgs, train_class_labels, train_color_lab
     imgsGray = rgb2gray(train_imgs)
     imgsGray1 = rgb2gray(imgs)
     Knn_test = KNN(imgsGray, train_class_labels)
-    k = 30  # Por el momento
+    k = 25  # Por el momento
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
-    image_list = imgs
     shape_labels = neighbours
     query_shape = "Dresses"
-    query_color = "Blue"
+    query_color = "Pink"
     use_percentage = False
 
-    result_imgs, result_info = retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape,
+    result_imgs, result_info = retrieval_combined(imgs, test_color_labels, shape_labels, query_color, query_shape,
                                                   use_percentage)
 
     # Visualización
-    visualize_retrieval(result_imgs, 10, result_info, None, 'Combinados')
+    visualize_retrieval(result_imgs, 5, result_info, None, 'Combinados')
 
 def train_load():
     train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, \
@@ -284,11 +280,11 @@ if __name__ == '__main__':
     imgs, class_labels, color_labels, upper, lower, background, cropped_images = truth_load()
 
 # TEST RETRIEVAL BY COLOR
-    test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+    #test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
 
 
 #TEST RETRIEVAL BY SHAPE
-    test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+    #test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
 
 
 #TEST RETRIEVAL COMBINED
