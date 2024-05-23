@@ -2,7 +2,8 @@ __authors__ = 'TO_BE_FILLED'
 __group__ = 'TO_BE_FILLED'
 
 import utl as utl
-from utils_data import read_dataset, read_extended_dataset, crop_images, Plot3DCloud, visualize_k_means
+from utils_data import read_dataset, read_extended_dataset, crop_images, Plot3DCloud, visualize_k_means, \
+    visualize_retrieval
 import time
 import matplotlib.pyplot as plt
 import numpy as np
@@ -91,7 +92,7 @@ def retrieval_by_color(image_list, color_labels, query_colors, percentage=False)
             else:
                 porcentajes_list.append([i, porcentaje])
 
-    porcentajes_ordenados = sorted(porcentajes_list, key=lambda x: x[1])  # Ordena segun porcentajes
+    porcentajes_ordenados = sorted(porcentajes_list, key=lambda x: x[1], reverse=True)  # Ordena segun porcentajes
 
     #print(porcentajes_ordenados)
 
@@ -195,11 +196,18 @@ if __name__ == '__main__':
         labels = get_colors(km.centroids)
         labels_function.append(labels)
 
-
-    query_shape = "Red"
+    # Recuperación por color
+    query_color = "Blue"
     k_neighbors_percentage = False
+    result_imgs, result_info = retrieval_by_color(imgs, labels_function, query_color, k_neighbors_percentage)
+    print(result_imgs)
+    # Visualización
+    visualize_retrieval(result_imgs, 10, result_info, None, 'Resultados por Color')
 
-    retrieval_by_color(imgs, labels_function, query_shape, k_neighbors_percentage)
+    # Calcular precisión de color
+    predicted_labels = labels_function[:len(test_color_labels)]  # Asegúrate de alinear las longitudes
+    color_accuracy = Get_color_accuracy(predicted_labels, color_labels)
+    print(f'Color Accuracy: {color_accuracy:.2f}%')
 
 ###########################################################################
 
@@ -207,16 +215,26 @@ if __name__ == '__main__':
 
     imgsGray = rgb2gray(train_imgs)
     imgsGray1 = rgb2gray(imgs)
+
     Knn_test = KNN(imgsGray1, train_class_labels)
-    k = 5 #Por el momento
+    k = 100 #Por el momento
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
 
     image_list = imgsGray1
     shape_labels = neighbours
-    query_shape = "Dresses"
-    k_neighbors_percentage = 30
 
-    retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percentage)
+    # Recuperación por forma
+    query_shape = "Shorts"
+    k_neighbors_percentage = 30
+    result_imgs, result_info = retrieval_by_shape(imgsGray1, neighbours, query_shape)
+
+    # Visualización
+    visualize_retrieval(result_imgs, 10)
+
+    # Calcular precisión de forma
+    predicted_shape_labels = neighbours[:len(test_class_labels)]  # Asegurarse de alinear las longitudes
+    shape_accuracy = Get_shape_accuracy(predicted_shape_labels, test_class_labels)
+    #print(f'Shape Accuracy: {shape_accuracy:.2f}%')
 
 ###########################################################################
 
@@ -244,5 +262,3 @@ if __name__ == '__main__':
     index = retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage)
     print(index)
 ###########################################################################
-
-
