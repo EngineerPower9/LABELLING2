@@ -3,7 +3,7 @@ __group__ = 'noneyet'
 
 import numpy as np
 import utils
-
+from sklearn.metrics import silhouette_score
 
 class KMeans:
     # Incialització de la classe kmeans
@@ -18,7 +18,9 @@ class KMeans:
         self.num_iter = 0  # Nombre d'iteracions que farem per buscar la millor distribució de classes
         self.K = K  # Nombre de classes a buscar
         self._init_X(X)  # Matriu de RGB
-        self._init_options(options)  # DICT options que decideixen com modifica la forma de buscar classes    # Funció que inicialitza la matriu de punts
+        self._init_options(options)  # DICT options que decideixen com modifica la forma de buscar classes
+
+    # Funció que inicialitza la matriu de punts
     def _init_X(self, X):
         """Initialization of all pixels, sets X as an array of data in vector form (PxD)
             Args:
@@ -58,7 +60,7 @@ class KMeans:
             options['verbose'] = False
         if 'tolerance' not in options:
             # Adjusta la tolerancia: Para l'algorisme quan el la diferencia entre el old centroid i el nou es de 0
-            options['tolerance'] = 0
+            options['tolerance'] = 0.2
         if 'max_iter' not in options:
             # Quantitat màxima d'iteracions permeses pel kmeans per trobar les classes / solució
             options['max_iter'] = np.inf
@@ -101,8 +103,23 @@ class KMeans:
             self.centroids = self.X[np.random.choice(len(self.X), self.K, replace=False)]
 
         # Format custom
-        elif self.options['km_init'].lower() == 'custom':
-            pass
+        elif self.options['km_init'].lower() == 'diagonal':
+            # Obtenim els valors mínims i màxims per cada dimensió de les dades
+            min_vals = np.min(self.X, axis=0)
+            max_vals = np.max(self.X, axis=0)
+
+            # Inicialitzem una llista per guardar els centroides
+            centroids = []
+
+            # Calculem la separació entre centroides al llarg de la diagonal
+            step = (max_vals - min_vals) / (self.K - 1)
+
+            # Generem els centroides al llarg de la diagonal
+            for i in range(self.K):
+                centroid = min_vals + i * step
+                centroids.append(centroid)
+
+            self.centroids = np.array(centroids)
 
     # Assigna el centròid més proper
     def get_labels(self):
@@ -114,7 +131,7 @@ class KMeans:
         # Després afegim el que tingui menys distància
         self.labels = np.argmin(distances, axis=1)
 
-    # Reassigna centròids
+    # Reassigna centroids
     def get_centroids(self):
         """
         Calculates coordinates of centroids based on the coordinates of all the points assigned to the centroid
@@ -122,7 +139,6 @@ class KMeans:
         # Copiem els antics centroides a una variable
         self.old_centroids = np.copy(self.centroids)
 
-        # Obtenim els
         for i in range(len(self.centroids)):
             assigned_points = self.X[self.labels == i]
             # Si tenim punts assignats, agafem la distància mitja
@@ -157,12 +173,14 @@ class KMeans:
             self.get_labels()
             # Obtenim la posició del centroides que defineixen les classes
             self.get_centroids()
-            # Mirem si arribem al punt de convergència mñinim que volem de solució
+            # Mirem si la distància de classe es
             has_converged = self.converges()
             # Si no l'obtenim, passem a la següent iteració
             iter_count += 1
 
-    # Calcula la intra-clas o WCD
+        self.num_iter += iter_count
+
+    # Calcula la intra-class o WCD
     def withinClassDistance(self):
         """
          returns the within class distance of the current clustering
@@ -172,36 +190,63 @@ class KMeans:
         min_distances = np.min(distances, axis=1)
         self.WCD = np.sum(np.square(min_distances)) / len(self.X)
 
+    # Calcula la inter-class o ICD
+    def interClassDistance(self):
+        interclass = 0.0
+        for i in range(len(self.centroids)):
+            assigned_points = self.X[self.labels == i]
+            if assigned_points.size > 0:
+                distances = np.linalg.norm(assigned_points - self.centroids[i], axis=1)
+                interclass += np.sum(distances)
+        self.ICD = interclass / self.K
+
+    # Calcula el discriminant de fisher
+    def fisherDiscriminant(self):
+        self.withinClassDistance()
+        self.interClassDistance()
+        self.FD = self.ICD / self.WCD
+        return self.FD
+
+    def silhouetteScore(self):
+        """
+        Calculates the silhouette score of the current clustering
+        """
+        self.silhouette = silhouette_score(self.X, self.labels)
+        return self.silhouette
 
     # Troba el valor K òptim
     def find_bestK(self, max_K):
-        """
-         sets the best k analysing the results up to 'max_K' clusters
-        """
-        # Funció que s'encarrega de buscar la millor la k per al set donat
-        listWCD = []
-        # Anem probant k fins trobar una que s'ajusti òptimament
-        for i in range(2, max_K + 1):
-            # Ajustem nova k
-            self.K = i
-            # Correm l'algorisme per a aquesta k
-            self.fit()
-            # Revisem la distància entre classes i la afegim a la llista
-            self.withinClassDistance()
-            listWCD.append(self.WCD)
+        list_metrics = []
+        tolerance = self.options['tolerance']
+        fitting_method = "WCD"
 
-            # Si la i es superior a 2 (necessari per poder fer els càlculs)
+        for i in range(2, max_K + 1):
+            self.K = i
+            self.fit()
+
+            # Designem la condició de fitting més adequada a cada cas
+            if fitting_method == 'WCD':
+                self.withinClassDistance()
+                metric = self.WCD
+            elif fitting_method == 'ICD':
+                self.interClassDistance()
+                metric = self.ICD
+            elif fitting_method == 'FB':
+                metric = self.fisherDiscriminant()
+            elif fitting_method == 'SF':
+                metric = self.silhouetteScore()
+            else:
+                raise ValueError(f"Error amb el mètode: {fitting_method}")
+
+            list_metrics.append(metric)
+
             if i > 2:
-                # Fem una reducció segons la mitja ponderada dels 2 últims a favor del penúltim
-                reduction = (listWCD[-2] - listWCD[-1]) / listWCD[-2]
-                # Si la millora es menor del 20%, podem dir que hem trobat la millor k
-                if 0 < reduction < 0.2:
+                reduction = (list_metrics[-2] - list_metrics[-1]) / list_metrics[-2]
+                if 0 < reduction < tolerance:
                     self.K = i - 1
                     break
 
-
-
-
+        return self.K
 
 # Calcula la distància entre cada píxel i cada centròid
 def distance(X, C):
@@ -237,5 +282,4 @@ def get_colors(centroids):
     # Retorna els colors que predominen per identificar i retorna les seves etiquetes en funció d'aquests
     X = np.argmax(utils.get_color_prob(centroids), axis=1)
     return [utils.colors[i] for i in X]
-
 
