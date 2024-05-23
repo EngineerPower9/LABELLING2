@@ -264,13 +264,13 @@ if __name__ == '__main__':
 
     imgsGray = rgb2gray(train_imgs)
     imgsGray1 = rgb2gray(imgs)
-    Knn_test = KNN(imgsGray1, train_class_labels)
+    Knn_test = KNN(imgsGray, train_class_labels)
     k = 30  # Por el momento
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
     image_list = imgs
     shape_labels = neighbours
     query_shape = "Dresses"
-    query_color = "Pink"
+    query_color = "Blue"
     use_percentage = False
 
     result_imgs, result_info = retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage)
