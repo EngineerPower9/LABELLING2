@@ -129,7 +129,7 @@ def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percen
                     porcentajes_list.append([i, porcentaje])
             else:
                 porcentajes_list.append([i, porcentaje])
-            index.append(i)
+
 
     porcentajes_ordenados = sorted(porcentajes_list, key=lambda x: x[1], reverse=True) #Ordena segun porcentajes
 
@@ -138,6 +138,7 @@ def retrieval_by_shape(image_list, shape_labels, query_shape, k_neighbors_percen
 
     for indices in porcentajes_ordenados:
         images_return.append(image_list[indices[0]])
+        index.append(indices[0])
 
     return images_return, porcentajes_ordenados, index
 
