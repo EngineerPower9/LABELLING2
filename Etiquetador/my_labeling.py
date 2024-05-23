@@ -170,13 +170,9 @@ def retrieval_combined(image_list, color_labels, shape_labels, query_color, quer
         for j, color in enumerate(color1): #Si la imatge està en els dos casos la retornarà
             if color[0] == shape[0]:
                 porcentaje = (color1[j][1]*shape1[i][1])/100
-                if use_percentage != False:
-                    if porcentaje > use_percentage:
-                        index.append(color[0])
-                        images_return.append(image_list[color[0]])
-                        porcentajes_ordenados.append([color[0], porcentaje])
-                else:
-                    porcentajes_ordenados.append([color[0], porcentaje])
+                index.append(color[0])
+                images_return.append(image_list[color[0]])
+                porcentajes_ordenados.append([color[0], porcentaje])
     porcentajes_ordenados = sorted(porcentajes_ordenados, key=lambda x: x[1], reverse=True)  # Ordena segun porcentajes
 
     for indices in porcentajes_ordenados:
@@ -212,10 +208,10 @@ if __name__ == '__main__':
         labels_function.append(labels)
 
     # Recuperación por color
-    query_color = "Blue"
+    query_color = "Pink"
     k_neighbors_percentage = False
     result_imgs, result_info = retrieval_by_color(imgs, labels_function, query_color, k_neighbors_percentage)
-    print(result_imgs)
+    #print(result_imgs)
     # Visualización
     visualize_retrieval(result_imgs, 10, result_info, None, 'Resultados por Color')
 
@@ -244,7 +240,7 @@ if __name__ == '__main__':
     result_imgs, result_info,index = retrieval_by_shape(imgsGray1, neighbours, query_shape)
     result_imgs_show = []
     for i in index:
-        result_imgs_show.append(imgs[i])
+       result_imgs_show.append(imgs[i])
     # Visualización
 
     visualize_retrieval(result_imgs_show, 15, result_info, None, 'Resultados por Forma')
@@ -278,9 +274,9 @@ if __name__ == '__main__':
     use_percentage = False
 
     result_imgs, result_info = retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage)
-    result_imgs_show1 = []
+
 
     # Visualización
-    visualize_retrieval(result_imgs, 15, result_info, None, 'Combinados')
+    visualize_retrieval(result_imgs, 10, result_info, None, 'Combinados')
 
 ###########################################################################
