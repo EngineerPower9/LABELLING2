@@ -234,7 +234,7 @@ def test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, 
 
 def test_test_retrieval_combined(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
     labels_function = []
-    for analize in imgs:
+    for analize in cropped_images:
         options = {}
         colors_list = []
         km = KMeans(analize)
