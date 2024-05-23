@@ -232,7 +232,8 @@ def test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, 
     visualize_retrieval(result_imgs_show, 15, result_info, None, 'Resultados por Forma')
 
     # Calcular precisión de forma
-    predicted_shape_labels = neighbours[:len(test_class_labels)]  # Asegurarse de alinear las longitudes
+    predicted_shape_labels = Knn_test.get_class()
+     # Asegurarse de alinear las longitudes
     shape_accuracy = Get_shape_accuracy(predicted_shape_labels, test_class_labels)
     # print(f'Shape Accuracy: {shape_accuracy:.2f}%')
 
