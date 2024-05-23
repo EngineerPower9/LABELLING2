@@ -85,8 +85,8 @@ def retrieval_by_color(image_list, color_labels, query_colors, percentage=False)
 
             # Porcentaje
             porcentaje = (veces / len(color_labels[i])) * 100
-            if k_neighbors_percentage != False:
-                if porcentaje >= k_neighbors_percentage:
+            if percentage != False:
+                if porcentaje >= percentage:
                     porcentajes_list.append([i, porcentaje])
                     #print(porcentajes_list)
             else:
@@ -184,20 +184,8 @@ def calculate_accuracy(predictions, ground_truth):
     correct = np.sum(predictions == ground_truth)
     return correct / len(ground_truth) * 100
 
-if __name__ == '__main__':
-    # Load all the images and GT
-    train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, \
-    test_color_labels = read_dataset(root_folder='./images/', gt_json='./images/gt.json')
-    # List with all the existent classes
-    classes = list(set(list(train_class_labels) + list(test_class_labels)))
-
-    # Load extended ground truth
-    imgs, class_labels, color_labels, upper, lower, background = read_extended_dataset()
-    cropped_images = crop_images(imgs, upper, lower)
-
-#########################test_retrieval_by_color()#########################
-
-# Crea una instancia de KMeans con los parámetros adecuados
+def test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
+    # Crea una instancia de KMeans con los parámetros adecuados
     labels_function = []
     for analize in imgs:
         options = {}
@@ -211,7 +199,7 @@ if __name__ == '__main__':
     query_color = "Pink"
     k_neighbors_percentage = False
     result_imgs, result_info = retrieval_by_color(imgs, labels_function, query_color, k_neighbors_percentage)
-    #print(result_imgs)
+    # print(result_imgs)
     # Visualización
     visualize_retrieval(result_imgs, 10, result_info, None, 'Resultados por Color')
 
@@ -220,27 +208,24 @@ if __name__ == '__main__':
     color_accuracy = Get_color_accuracy(predicted_labels, color_labels)
     print(f'Color Accuracy: {color_accuracy:.2f}%')
 
-###########################################################################
-
-#########################test_retrieval_by_shape()#########################
-
+def test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
     imgsGray = rgb2gray(train_imgs)
     imgsGray1 = rgb2gray(imgs)
 
     Knn_test = KNN(imgsGray, train_class_labels)
-    k = 15 #Por el momento
+    k = 15  # Por el momento
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
 
-    #image_list = imgsGray1
+    # image_list = imgsGray1
     shape_labels = neighbours
 
     # Recuperación por forma
     query_shape = "Dresses"
     k_neighbors_percentage = False
-    result_imgs, result_info,index = retrieval_by_shape(imgsGray1, neighbours, query_shape)
+    result_imgs, result_info, index = retrieval_by_shape(imgsGray1, neighbours, query_shape)
     result_imgs_show = []
     for i in index:
-       result_imgs_show.append(imgs[i])
+        result_imgs_show.append(imgs[i])
     # Visualización
 
     visualize_retrieval(result_imgs_show, 15, result_info, None, 'Resultados por Forma')
@@ -248,11 +233,9 @@ if __name__ == '__main__':
     # Calcular precisión de forma
     predicted_shape_labels = neighbours[:len(test_class_labels)]  # Asegurarse de alinear las longitudes
     shape_accuracy = Get_shape_accuracy(predicted_shape_labels, test_class_labels)
-    #print(f'Shape Accuracy: {shape_accuracy:.2f}%')
+    # print(f'Shape Accuracy: {shape_accuracy:.2f}%')
 
-###########################################################################
-
-#########################test_retrieval_combined()#########################
+def test_test_retrieval_combined(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
     labels_function = []
     for analize in imgs:
         options = {}
@@ -273,10 +256,40 @@ if __name__ == '__main__':
     query_color = "Blue"
     use_percentage = False
 
-    result_imgs, result_info = retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape, use_percentage)
-
+    result_imgs, result_info = retrieval_combined(image_list, color_labels, shape_labels, query_color, query_shape,
+                                                  use_percentage)
 
     # Visualización
     visualize_retrieval(result_imgs, 10, result_info, None, 'Combinados')
 
-###########################################################################
+def train_load():
+    train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, \
+    test_color_labels = read_dataset(root_folder='./images/', gt_json='./images/gt.json')
+    # List with all the existent classes
+    classes = list(set(list(train_class_labels) + list(test_class_labels)))
+
+    return train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes
+
+def truth_load():
+    imgs, class_labels, color_labels, upper, lower, background = read_extended_dataset()
+    cropped_images = crop_images(imgs, upper, lower)
+
+    return imgs, class_labels, color_labels, upper, lower, background, cropped_images
+
+if __name__ == '__main__':
+
+#Inicialización de variables
+
+    train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes = train_load()
+    imgs, class_labels, color_labels, upper, lower, background, cropped_images = truth_load()
+
+# TEST RETRIEVAL BY COLOR
+    test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+
+
+#TEST RETRIEVAL BY SHAPE
+    test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+
+
+#TEST RETRIEVAL COMBINED
+    test_test_retrieval_combined(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
