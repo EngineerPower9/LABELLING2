@@ -50,8 +50,12 @@ def Kmean_statistics(kmeans_class, images, Kmax):
     plt.show()
 
 def Get_shape_accuracy(predicted_labels, true_labels):
-    correct_matches = sum(p == t for p, t in zip(predicted_labels, true_labels))
-    accuracy = (correct_matches / len(true_labels)) * 100
+    correct_values = 0
+    for i, label in enumerate(predicted_labels):
+        if label == true_labels[i]:
+            correct_values +=1
+    accuracy = (correct_values/len(predicted_labels))*100
+
     return accuracy
 
 def Get_color_accuracy(predicted_labels, true_labels):
@@ -261,6 +265,35 @@ def test_test_retrieval_combined(train_imgs, train_class_labels, train_color_lab
     # Visualización
     visualize_retrieval(result_imgs, 10, result_info, None, 'Combinados')
 
+def test_Get_shape_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
+    imgsGray = rgb2gray(train_imgs)
+    imgsGray1 = rgb2gray(test_imgs)
+
+    Knn_test = KNN(imgsGray, train_class_labels)
+    k = 15  # Por el momento
+    neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
+    predicted_labels = Knn_test.get_class()
+    accuracy = Get_shape_accuracy(predicted_labels, test_class_labels)
+    print("SHAPE ACCURACY: ", accuracy)
+
+    return accuracy
+
+def test_Get_color_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
+    labels_function = []
+    for analize in cropped_images:
+        options = {}
+        colors_list = []
+        km = KMeans(analize)
+        KMeans.find_bestK(km, len(colors))
+        labels = get_colors(km.centroids)
+        labels_function.append(labels)
+
+    accuracy = Get_color_accuracy(labels_function, color_labels)
+    print("Get color accuracy: ", accuracy)
+
+    return accuracy
+
+
 def train_load():
     train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, \
     test_color_labels = read_dataset(root_folder='./images/', gt_json='./images/gt.json')
@@ -291,4 +324,10 @@ if __name__ == '__main__':
 
 
 #TEST RETRIEVAL COMBINED
-    test_test_retrieval_combined(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+    #test_test_retrieval_combined(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+
+#TEST SHAPE_ACCURACY
+    #test_Get_shape_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+
+#Test COLOR ACCURACY
+    test_Get_color_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
