@@ -293,7 +293,6 @@ def test_Get_color_accuracy(train_imgs, train_class_labels, train_color_labels, 
 
     return accuracy
 
-
 def train_load():
     train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, \
     test_color_labels = read_dataset(root_folder='./images/', gt_json='./images/gt.json')
@@ -327,7 +326,7 @@ if __name__ == '__main__':
     #test_test_retrieval_combined(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
 
 #TEST SHAPE_ACCURACY
-    #test_Get_shape_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+    test_Get_shape_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
 
 #Test COLOR ACCURACY
-    test_Get_color_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+    #test_Get_color_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
