@@ -1,4 +1,4 @@
-__authors__ = ["1638317","1638317"]
+__authors__ = ["1638317","1634232","1635636"]
 __group__ = '1'
 
 import numpy as np
@@ -47,7 +47,8 @@ class KNN:
             imgs.append(valueimg)
 
         #CÀLCUL DE DISTÀNCIES
-        distances = cdist(imgs, self.train_data)
+
+        distances= cdist(imgs, self.train_data, "correlation")
 
         #K CLASSES
         #Evaluem per imatges
@@ -103,7 +104,7 @@ class KNN:
                             break
                 else:
                     values_res.append(valors[0])
-        print(np.array(values_res))
+        #print(np.array(values_res))
         return np.array(values_res)
 
 
