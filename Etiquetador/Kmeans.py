@@ -252,7 +252,7 @@ class KMeans:
 def distance(X, C):
     """
     Calculates the distance between each pixel and each centroid
-    Args:
+    Args:silhouette_score
         X (numpy array): PxD 1st set of data points (usually data points)
         C (numpy array): KxD 2nd set of data points (usually cluster centroids points)
 

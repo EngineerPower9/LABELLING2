@@ -1,4 +1,4 @@
-__authors__ = ["1638317","1634232","1635636"]
+__authors__ = 'TO_BE_FILLED'
 __group__ = 'TO_BE_FILLED'
 
 import utl as utl
@@ -12,42 +12,80 @@ from utils import *
 from Kmeans import __authors__, __group__, KMeans, distance, get_colors
 
 
-def Kmean_statistics(kmeans_class, images, Kmax):
-    wcds = []
-    iterations = []
-    times = []
+def Kmean_statistics(kmeans_class, imatges, Kmax):
+    # Variables para almacenar resultados
+    all_wcds = []  # Para almacenar los valores de WCD para cada imagen y cada K
+    all_iterations = []  # Para almacenar el número de iteraciones para cada imagen y cada K
+    all_times = []  # Para almacenar el tiempo de convergencia para cada imagen y cada K
 
-    for k in range(2, Kmax+1):
-        start_time = time.time()
-        kmeans = kmeans_class(n_clusters=k, random_state=42)
-        kmeans.fit(images)
-        end_time = time.time()
+    # Opciones Kmeans
+    options = {
+        'km_init': 'first',
+        'tolerance': 0.2,
+        'fitting': 'WCD'
+    }
 
-        wcds.append(kmeans.inertia_)  # WCD
-        iterations.append(kmeans.n_iter_)
-        times.append(end_time - start_time)
+    # Iteramos sobre cada valor de K
+    for K in range(2, Kmax + 1):
+        wcds = []
+        iterations = []
+        times = []
 
+        for imatge in imatges:
+            km = kmeans_class(imatge, K, options)
+
+            # Iniciamos el tiempo
+            start_time = time.time()
+
+            # Ejecutamos Kmeans
+            km.fit()  # Ajustamos el K-means a los datos
+            km.withinClassDistance()  # Suponemos que km.WCD nos da el valor de WCD
+            wcd = km.WCD
+            num_iter = km.num_iter  # Suponemos que km.num_iter nos da el número de iteraciones
+
+            # Finalizamos el tiempo
+            end_time = time.time()
+
+            # Calculamos el tiempo de convergencia
+            time_elapsed = end_time - start_time
+
+            # Guardamos los resultados
+            wcds.append(wcd)
+            iterations.append(num_iter)
+            times.append(time_elapsed)
+
+        # Guardamos los resultados promedio para cada K
+        all_wcds.append(np.mean(wcds))
+        all_iterations.append(np.mean(iterations))
+        all_times.append(np.mean(times))
+
+    # Graficamos los resultados
     plt.figure(figsize=(12, 4))
+
+    # WCD por K
     plt.subplot(131)
-    plt.plot(range(2, Kmax+1), wcds, marker='o')
+    plt.plot(range(2, Kmax + 1), all_wcds, marker='o')
     plt.title('WCD by K')
     plt.xlabel('K')
     plt.ylabel('WCD')
 
+    # Iteraciones por K
     plt.subplot(132)
-    plt.plot(range(2, Kmax+1), iterations, marker='o')
+    plt.plot(range(2, Kmax + 1), all_iterations, marker='o')
     plt.title('Iterations by K')
     plt.xlabel('K')
     plt.ylabel('Iterations')
 
+    # Tiempo de convergencia por K
     plt.subplot(133)
-    plt.plot(range(2, Kmax+1), times, marker='o')
+    plt.plot(range(2, Kmax + 1), all_times, marker='o')
     plt.title('Time to Converge by K')
     plt.xlabel('K')
     plt.ylabel('Time (s)')
 
     plt.tight_layout()
     plt.show()
+
 
 def Get_shape_accuracy(predicted_labels, true_labels):
     correct_values = 0
@@ -181,18 +219,16 @@ def retrieval_combined(image_list, color_labels, shape_labels, query_color, quer
 
     return images_return, porcentajes_ordenados
 
-def calculate_accuracy(predictions, ground_truth):
-    correct = np.sum(predictions == ground_truth)
-    return correct / len(ground_truth) * 100
-
 def test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
     # Crea una instancia de KMeans con los parámetros adecuados
     labels_function = []
+    options = {}
+    options['km_init'] = 'first'
+    options['tolerance'] = 0.2
+    options['fitting'] = 'WCD'
 
     for analize in cropped_images:
-        options = {}
-        colors_list = []
-        km = KMeans(analize)
+        km = KMeans(analize, 1, options)
         KMeans.find_bestK(km, len(colors))
         labels = get_colors(km.centroids)
         labels_function.append(labels)
@@ -202,8 +238,9 @@ def test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, 
     query_color = "Red"
     k_neighbors_percentage = False
     result_imgs, result_info = retrieval_by_color(imgs, labels_function, query_color, k_neighbors_percentage)
+
     # Visualización
-    visualize_retrieval(result_imgs, 10, result_info, None, 'Resultados por Color')
+    visualize_retrieval(result_imgs, 16, result_info, None, 'Resultados por Color')
 
     # Calcular precisión de color
     predicted_labels = labels_function[:len(test_color_labels)]  # Asegúrate de alinear las longitudes
@@ -229,7 +266,7 @@ def test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, 
         result_imgs_show.append(test_imgs[i])
     # Visualización
 
-    visualize_retrieval(result_imgs_show, 15, result_info, None, 'Resultados por Forma')
+    visualize_retrieval(result_imgs_show, 16, result_info, None, 'Resultados por Forma')
 
     # Calcular precisión de forma
     predicted_shape_labels = Knn_test.get_class()
@@ -242,7 +279,7 @@ def test_test_retrieval_combined(train_imgs, train_class_labels, train_color_lab
     print(len(cropped_images))
     print(len(imgs))
     print(len(train_imgs))
-    for analize in cropped_images:
+    for analize in imgs:
         options = {}
         colors_list = []
         km = KMeans(analize)
@@ -256,7 +293,7 @@ def test_test_retrieval_combined(train_imgs, train_class_labels, train_color_lab
     k = 30  # Por el momento
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
     shape_labels = neighbours
-    query_shape = "Shorts"
+    query_shape = "Dresses"
     query_color = "Red"
     use_percentage = False
 
@@ -281,7 +318,7 @@ def test_Get_shape_accuracy(train_imgs, train_class_labels, train_color_labels, 
 
 def test_Get_color_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
     labels_function = []
-    for analize in cropped_images:
+    for analize in imgs:
         options = {}
         colors_list = []
         km = KMeans(analize)
@@ -293,6 +330,29 @@ def test_Get_color_accuracy(train_imgs, train_class_labels, train_color_labels, 
     print("Get color accuracy: ", accuracy)
 
     return accuracy
+
+def getBestKforKNN(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
+    imgsGray = rgb2gray(train_imgs)
+    imgsGray1 = rgb2gray(test_imgs)
+    Knn_test = KNN(imgsGray, train_class_labels)
+    calcula = []
+
+    for k in range(1, 20):
+        predicted_labels = []
+        # Por el momento
+        neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
+        predicted_labels = Knn_test.get_class()
+        accuracy = Get_shape_accuracy(predicted_labels, test_class_labels)
+        calcula.append(accuracy)
+
+    print(calcula)
+    min_value = max(calcula)
+    best_k = calcula.index(min_value)
+    print("BEST: ", best_k + 1)
+    print("VALUE: ", calcula[best_k])
+    return min_value
+
+
 
 def train_load():
     train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, \
@@ -316,18 +376,21 @@ if __name__ == '__main__':
     imgs, class_labels, color_labels, upper, lower, background, cropped_images = truth_load()
 
 # TEST RETRIEVAL BY COLOR
-    test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
-
+    #test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+    #Kmean_statistics(KMeans, imgs, len(colors))
 
 #TEST RETRIEVAL BY SHAPE
-    test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+    #test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
 
 
 #TEST RETRIEVAL COMBINED
-    test_test_retrieval_combined(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+    #test_test_retrieval_combined(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
 
 #TEST SHAPE_ACCURACY
     #test_Get_shape_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
 
 #Test COLOR ACCURACY
     #test_Get_color_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+
+#TEST BESTKFOR KNN
+    getBestKforKNN(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
