@@ -20,9 +20,9 @@ def Kmean_statistics(kmeans_class, imatges, Kmax):
 
     # Opciones Kmeans
     options = {
-        'km_init': 'first',
-        'tolerance': 0.2,
-        'fitting': 'WCD'
+        'km_init': 'random',
+        'tolerance': 0.0,
+        'fitting': 'FD'
     }
 
     # Iteramos sobre cada valor de K
@@ -65,9 +65,83 @@ def Kmean_statistics(kmeans_class, imatges, Kmax):
     # WCD por K
     plt.subplot(131)
     plt.plot(range(2, Kmax + 1), all_wcds, marker='o')
-    plt.title('WCD by K')
+    plt.title('Fitting by K')
     plt.xlabel('K')
-    plt.ylabel('WCD')
+    plt.ylabel('Fitting')
+
+    # Iteraciones por K
+    plt.subplot(132)
+    plt.plot(range(2, Kmax + 1), all_iterations, marker='o')
+    plt.title('Iterations by K')
+    plt.xlabel('K')
+    plt.ylabel('Iterations')
+
+    # Tiempo de convergencia por K
+    plt.subplot(133)
+    plt.plot(range(2, Kmax + 1), all_times, marker='o')
+    plt.title('Time to Converge by K')
+    plt.xlabel('K')
+    plt.ylabel('Time (s)')
+
+    plt.tight_layout()
+    plt.show()
+
+def Kmean_best_k(kmeans_class, imatges, Kmax):
+    # Variables para almacenar resultados
+    all_wcds = []  # Para almacenar los valores de WCD para cada imagen y cada K
+    all_iterations = []  # Para almacenar el número de iteraciones para cada imagen y cada K
+    all_times = []  # Para almacenar el tiempo de convergencia para cada imagen y cada K
+
+    # Opciones Kmeans
+    options = {
+        'km_init': 'random',
+        'tolerance': 0.0,
+        'fitting': 'FD'
+    }
+
+    # Iteramos sobre cada valor de K
+    for K in range(2, Kmax + 1):
+        wcds = []
+        iterations = []
+        times = []
+
+        for imatge in imatges:
+            km = kmeans_class(imatge, K, options)
+
+            # Iniciamos el tiempo
+            start_time = time.time()
+
+            # Ejecutamos Kmeans
+            km.fit()  # Ajustamos el K-means a los datos
+            km.withinClassDistance()  # Suponemos que km.WCD nos da el valor de WCD
+            wcd = km.WCD
+            num_iter = km.num_iter  # Suponemos que km.num_iter nos da el número de iteraciones
+
+            # Finalizamos el tiempo
+            end_time = time.time()
+
+            # Calculamos el tiempo de convergencia
+            time_elapsed = end_time - start_time
+
+            # Guardamos los resultados
+            wcds.append(wcd)
+            iterations.append(num_iter)
+            times.append(time_elapsed)
+
+        # Guardamos los resultados promedio para cada K
+        all_wcds.append(np.mean(wcds))
+        all_iterations.append(np.mean(iterations))
+        all_times.append(np.mean(times))
+
+    # Graficamos los resultados
+    plt.figure(figsize=(12, 4))
+
+    # WCD por K
+    plt.subplot(131)
+    plt.plot(range(2, Kmax + 1), all_wcds, marker='o')
+    plt.title('Fitting by K')
+    plt.xlabel('K')
+    plt.ylabel('Fitting')
 
     # Iteraciones por K
     plt.subplot(132)
@@ -223,8 +297,8 @@ def test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, 
     # Crea una instancia de KMeans con los parámetros adecuados
     labels_function = []
     options = {}
-    options['km_init'] = 'first'
-    options['tolerance'] = 0.2
+    options['km_init'] = 'diagonal'
+    options['tolerance'] = 0.0
     options['fitting'] = 'WCD'
 
     for analize in cropped_images:
@@ -233,6 +307,7 @@ def test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, 
         labels = get_colors(km.centroids)
         labels_function.append(labels)
 
+    print(labels)
 
     # Recuperación por color
     query_color = "Red"
