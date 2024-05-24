@@ -14,9 +14,9 @@ from Kmeans import __authors__, __group__, KMeans, distance, get_colors
 
 def Kmean_statistics(kmeans_class, imatges, Kmax):
     # Variables para almacenar resultados
-    wcds = []         # Para almacenar los valores de WCD
-    iterations = []   # Para almacenar el número de iteraciones
-    times = []        # Para almacenar el tiempo de convergencia
+    all_wcds = []  # Para almacenar los valores de WCD para cada imagen y cada K
+    all_iterations = []  # Para almacenar el número de iteraciones para cada imagen y cada K
+    all_times = []  # Para almacenar el tiempo de convergencia para cada imagen y cada K
 
     # Opciones Kmeans
     options = {
@@ -25,53 +25,60 @@ def Kmean_statistics(kmeans_class, imatges, Kmax):
         'fitting': 'WCD'
     }
 
-    # Convertimos las imágenes en datos aptos para K-means (si es necesario)
-    data = [imatge.flatten() for imatge in imatges]  # Flattening the images into 1D vectors
-
     # Iteramos sobre cada valor de K
     for K in range(2, Kmax + 1):
-        km = kmeans_class(data, K, options)
+        wcds = []
+        iterations = []
+        times = []
 
-        # Iniciamos el tiempo
-        start_time = time.time()
+        for imatge in imatges:
+            km = kmeans_class(imatge, K, options)
 
-        # Ejecutamos Kmeans
-        km.fit()  # Ajustamos el K-means a los datos
-        km.withinClassDistance()  # Suponemos que km.WCD nos da el valor de WCD
-        wcd = km.WCD
-        num_iter = km.num_iter  # Suponemos que km.num_iter nos da el número de iteraciones
+            # Iniciamos el tiempo
+            start_time = time.time()
 
-        # Finalizamos el tiempo
-        end_time = time.time()
+            # Ejecutamos Kmeans
+            km.fit()  # Ajustamos el K-means a los datos
+            km.withinClassDistance()  # Suponemos que km.WCD nos da el valor de WCD
+            wcd = km.WCD
+            num_iter = km.num_iter  # Suponemos que km.num_iter nos da el número de iteraciones
 
-        # Calculamos el tiempo de convergencia
-        time_elapsed = end_time - start_time
+            # Finalizamos el tiempo
+            end_time = time.time()
 
-        # Guardamos los resultados
-        wcds.append(wcd)
-        iterations.append(num_iter)
-        times.append(time_elapsed)
+            # Calculamos el tiempo de convergencia
+            time_elapsed = end_time - start_time
+
+            # Guardamos los resultados
+            wcds.append(wcd)
+            iterations.append(num_iter)
+            times.append(time_elapsed)
+
+        # Guardamos los resultados promedio para cada K
+        all_wcds.append(np.mean(wcds))
+        all_iterations.append(np.mean(iterations))
+        all_times.append(np.mean(times))
 
     # Graficamos los resultados
     plt.figure(figsize=(12, 4))
 
     # WCD por K
     plt.subplot(131)
-    plt.plot(range(2, Kmax+1), wcds, marker='o')
+    plt.plot(range(2, Kmax + 1), all_wcds, marker='o')
     plt.title('WCD by K')
     plt.xlabel('K')
     plt.ylabel('WCD')
 
     # Iteraciones por K
     plt.subplot(132)
-    plt.plot(range(2, Kmax+1), iterations, marker='o')
+    plt.plot(range(2, Kmax + 1), all_iterations, marker='o')
     plt.title('Iterations by K')
     plt.xlabel('K')
     plt.ylabel('Iterations')
 
     # Tiempo de convergencia por K
     plt.subplot(133)
-    plt.plot(range(2, Kmax+1), times, marker='o')
+    plt.plot(range(2, Kmax + 1), all_times, marker='o')
     plt.title('Time to Converge by K')
     plt.xlabel('K')
     plt.ylabel('Time (s)')
