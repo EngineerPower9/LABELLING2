@@ -86,79 +86,102 @@ def Kmean_statistics(kmeans_class, imatges, Kmax):
     plt.tight_layout()
     plt.show()
 
+
 def Kmean_best_k(kmeans_class, imatges, Kmax):
     # Variables para almacenar resultados
-    all_wcds = []  # Para almacenar los valores de WCD para cada imagen y cada K
-    all_iterations = []  # Para almacenar el número de iteraciones para cada imagen y cada K
-    all_times = []  # Para almacenar el tiempo de convergencia para cada imagen y cada K
+    all_fitting = []
+    all_iterations = []
+    all_times = []
+    all_K = []
 
     # Opciones Kmeans
     options = {
-        'km_init': 'random',
-        'tolerance': 0.0,
-        'fitting': 'FD'
+        'km_init': 'first',
+        'tolerance': 0.2,
+        'fitting': 'WCD'
     }
 
-    # Iteramos sobre cada valor de K
-    for K in range(2, Kmax + 1):
-        wcds = []
-        iterations = []
-        times = []
+    for imatge in imatges:
+        km = kmeans_class(imatge, 1, options)
 
-        for imatge in imatges:
-            km = kmeans_class(imatge, K, options)
+        # Iniciamos el tiempo
+        start_time = time.time()
 
-            # Iniciamos el tiempo
-            start_time = time.time()
+        # Ejecutamos Kmeans para encontrar el mejor K
+        best_K = km.find_bestK(Kmax)
 
-            # Ejecutamos Kmeans
-            km.fit()  # Ajustamos el K-means a los datos
-            km.withinClassDistance()  # Suponemos que km.WCD nos da el valor de WCD
-            wcd = km.WCD
-            num_iter = km.num_iter  # Suponemos que km.num_iter nos da el número de iteraciones
+        # Finalizamos el tiempo
+        end_time = time.time()
 
-            # Finalizamos el tiempo
-            end_time = time.time()
+        # Calculamos el tiempo de convergencia
+        time_elapsed = end_time - start_time
 
-            # Calculamos el tiempo de convergencia
-            time_elapsed = end_time - start_time
+        # Guardamos los resultados
+        all_fitting.append(km.WCD)  # Suponemos que WCD se actualiza correctamente en find_bestK
+        all_iterations.append(km.num_iter)
+        all_times.append(time_elapsed)
+        all_K.append(best_K)
 
-            # Guardamos los resultados
-            wcds.append(wcd)
-            iterations.append(num_iter)
-            times.append(time_elapsed)
+    # Calculamos los promedios
+    avg_fitting = np.mean(all_fitting)
+    avg_iterations = np.mean(all_iterations)
+    avg_times = np.mean(all_times)
+    avg_K = np.mean(all_K)
 
-        # Guardamos los resultados promedio para cada K
-        all_wcds.append(np.mean(wcds))
-        all_iterations.append(np.mean(iterations))
-        all_times.append(np.mean(times))
+    print(f"El mejor valor promedio de K es: {avg_K:.2f}")
+    print(f"Promedio de WCD: {avg_fitting:.2f}")
+    print(f"Promedio de Iteraciones: {avg_iterations:.2f}")
+    print(f"Promedio de Tiempo (s): {avg_times:.2f}")
 
-    # Graficamos los resultados
-    plt.figure(figsize=(12, 4))
+    # Diezmado para suavizar las curvas
+    def smooth_curve(points, factor=0.9):
+        smoothed_points = []
+        for point in points:
+            if smoothed_points:
+                previous = smoothed_points[-1]
+                smoothed_points.append(previous * factor + point * (1 - factor))
+            else:
+                smoothed_points.append(point)
+        return smoothed_points
 
-    # WCD por K
+    smoothed_K = smooth_curve(all_K)
+    smoothed_iterations = smooth_curve(all_iterations)
+    smoothed_times = smooth_curve(all_times)
+
+    # Graficamos los resultados individuales por imagen
+    plt.figure(figsize=(16, 4))
+
+    # Mejor K por imagen
     plt.subplot(131)
-    plt.plot(range(2, Kmax + 1), all_wcds, marker='o')
-    plt.title('Fitting by K')
-    plt.xlabel('K')
-    plt.ylabel('Fitting')
+    plt.plot(range(1, len(smoothed_K) + 1), smoothed_K, marker='o')
+    plt.axhline(y=avg_K, color='r', linestyle='--', label=f'Avg K = {avg_K:.2f}')
+    plt.title('Best K per Image')
+    plt.xlabel('Image Index')
+    plt.ylabel('Best K')
+    plt.legend()
 
-    # Iteraciones por K
+    # Iteraciones por imagen
     plt.subplot(132)
-    plt.plot(range(2, Kmax + 1), all_iterations, marker='o')
-    plt.title('Iterations by K')
-    plt.xlabel('K')
+    plt.plot(range(1, len(smoothed_iterations) + 1), smoothed_iterations, marker='o')
+    plt.axhline(y=avg_iterations, color='r', linestyle='--', label=f'Avg Iterations = {avg_iterations:.2f}')
+    plt.title('Iterations per Image')
+    plt.xlabel('Image Index')
     plt.ylabel('Iterations')
+    plt.legend()
 
-    # Tiempo de convergencia por K
+    # Tiempo de convergencia por imagen
     plt.subplot(133)
-    plt.plot(range(2, Kmax + 1), all_times, marker='o')
-    plt.title('Time to Converge by K')
-    plt.xlabel('K')
+    plt.plot(range(1, len(smoothed_times) + 1), smoothed_times, marker='o')
+    plt.axhline(y=avg_times, color='r', linestyle='--', label=f'Avg Time = {avg_times:.2f}s')
+    plt.title('Time to Converge per Image')
+    plt.xlabel('Image Index')
     plt.ylabel('Time (s)')
+    plt.legend()
 
     plt.tight_layout()
     plt.show()
+
+    return avg_K
 
 
 def Get_shape_accuracy(predicted_labels, true_labels):
@@ -429,7 +452,8 @@ if __name__ == '__main__':
 
 # TEST RETRIEVAL BY COLOR
     #test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
-    Kmean_statistics(KMeans, imgs, len(colors))
+    #Kmean_statistics(KMeans, imgs, len(colors))
+    Kmean_best_k(KMeans, imgs, len(colors))
 
 #TEST RETRIEVAL BY SHAPE
     #test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
