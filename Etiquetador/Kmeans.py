@@ -190,6 +190,8 @@ class KMeans:
         min_distances = np.min(distances, axis=1)
         self.WCD = np.sum(np.square(min_distances)) / len(self.X)
 
+
+
     # Calcula la inter-class o ICD
     def interClassDistance(self):
         interclass = 0.0
@@ -264,7 +266,7 @@ def distance(X, C):
     X2 = np.sum(np.square(X), axis=1, keepdims=True)
     C2 = np.sum(np.square(C), axis=1)
     # Apliquem la fòrmula de pitàgores per veure la disància però usant matrius
-    distancies = np.sqrt(X2 - 2 * np.dot(X, C.T) + C2)
+    distancies = np.sqrt(np.maximum(X2 - 2 * np.dot(X, C.T) + C2, 0))
 
     # Retornem una matriu de les distàncies de cada centroide respecte cada punt de la nostra matriu
     return distancies
