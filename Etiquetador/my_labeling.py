@@ -27,6 +27,8 @@ def Kmean_statistics(kmeans_class, imatges, Kmax):
         'fitting': 'WCD'
     }
 
+    fitting_method = options["fitting"]
+
     # Iteramos sobre cada valor de K
     for K in range(2, Kmax + 1):
         wcds = []
@@ -41,8 +43,20 @@ def Kmean_statistics(kmeans_class, imatges, Kmax):
 
             # Ejecutamos Kmeans
             km.fit()  # Ajustamos el K-means a los datos
-            km.withinClassDistance()  # Suponemos que km.WCD nos da el valor de WCD
-            wcd = km.WCD
+
+            if fitting_method == 'WCD':
+                km.withinClassDistance()
+                metric = km.WCD
+            elif fitting_method == 'ICD':
+                km.interClassDistance()
+                metric = km.ICD
+            elif fitting_method == 'FB':
+                metric = km.fisherDiscriminant()
+            elif fitting_method == 'SF':
+                metric = km.silhouetteScore()
+            else:
+                raise ValueError(f"Error amb el mètode: {fitting_method}")
+
             num_iter = km.num_iter  # Suponemos que km.num_iter nos da el número de iteraciones
 
             # Finalizamos el tiempo
@@ -52,7 +66,7 @@ def Kmean_statistics(kmeans_class, imatges, Kmax):
             time_elapsed = end_time - start_time
 
             # Guardamos los resultados
-            wcds.append(wcd)
+            wcds.append(metric)
             iterations.append(num_iter)
             times.append(time_elapsed)
 
@@ -179,76 +193,313 @@ def Kmean_best_k(kmeans_class, imatges, Kmax):
 
 def Kmean_centroids_accuracy(kmeans_class, imatges, true_labels, Kmax):
     # Variables para almacenar resultados
-    all_centroids = []
-    all_accuracies = []
+    all_accuracy = []
 
     # Opciones Kmeans
     options = {
         'km_init': 'first',
-        'tolerance': 0.05,
-        'fitting': 'WCD'
+        'tolerance': 0.0
     }
 
-    for imatge, true_label in zip(imatges, true_labels):
-        km = kmeans_class(imatge, 1, options)
+    resultats = []
 
-        # Iniciamos el tiempo
-        start_time = time.time()
+    # Iteramos sobre cada valor de K
+    for K in range(2, Kmax + 1):
+        accuracy = []
 
-        # Ejecutamos Kmeans para encontrar el mejor K
-        best_K = km.find_bestK(Kmax)
+        for imatge in imatges:
+            km = kmeans_class(imatge, K, options)
 
-        # Finalizamos el tiempo
-        end_time = time.time()
+            # Ejecutamos Kmeans
+            km.fit()  # Ajustamos el K-means a los datos
 
-        # Calculamos el tiempo de convergencia
-        time_elapsed = end_time - start_time
+            # Guardamos los resultados de los centroides
+            accuracy.append(get_colors(km.centroids))
 
-        # Guardamos los resultados
-        all_centroids.append(best_K)
-        predicted_labels = get_colors(km.centroids)
-        accuracy = accuracy_score([true_label] * len(predicted_labels), predicted_labels)
-        all_accuracies.append(accuracy)
+        # Guardamos el resultado de comparar cada imagen con sus etiquetas verdaderas pero con diferentes K
+        resultats.append(Get_color_accuracy(accuracy, true_labels))
+        all_accuracy.append(resultats[-1])
 
-    # Calculamos los promedios
-    avg_centroids = np.mean(all_centroids)
-    avg_accuracy = np.mean(all_accuracies)
+    # Graficar los resultados
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(2, Kmax + 1), all_accuracy, marker='o', linestyle='-', color='b')
+    plt.xlabel('Número de Centroides (k)')
+    plt.ylabel('Precisión (%)')
+    plt.title('Precisión vs Número de Centroides (k)')
+    plt.grid(True)
+    plt.show()
 
-    print(f"El mejor valor promedio de K es: {avg_centroids:.2f}")
-    print(f"Promedio de Accuracy: {avg_accuracy:.2f}")
+    return all_accuracy
 
-    # Suavizamos las curvas utilizando savgol_filter de SciPy
-    window_length = 5  # Tamaño de la ventana, debe ser un número impar
-    polyorder = 2      # Orden del polinomio para el filtro
+def Kmean_time_statistics(kmeans_class, imatges, Kmax):
+    # Métodos de ajuste
+    fitting_methods = ['WCD', 'ICD', 'FB', 'SF']
+    method_times = {method: [] for method in fitting_methods}
 
-    smoothed_centroids = savgol_filter(all_centroids, window_length, polyorder)
-    smoothed_accuracies = savgol_filter(all_accuracies, window_length, polyorder)
+    # Iteramos sobre cada valor de K
+    for K in range(2, Kmax + 1):
+        for method in fitting_methods:
+            times = []
 
-    # Graficamos los resultados individuales por imagen
-    plt.figure(figsize=(16, 4))
+            for imatge in imatges:
+                options = {
+                    'km_init': 'first',
+                    'tolerance': 0.2,
+                    'fitting': method
+                }
+                km = kmeans_class(imatge, K, options)
 
-    # Cantidad de centroides por imagen
-    plt.subplot(121)
-    plt.plot(range(1, len(smoothed_centroids) + 1), smoothed_centroids, marker='o', linestyle='-', color='blue')
-    plt.axhline(y=avg_centroids, color='red', linestyle='--', label=f'Avg Centroids = {avg_centroids:.2f}')
-    plt.title('Centroids per Image')
-    plt.xlabel('Image Index')
-    plt.ylabel('Number of Centroids')
+                # Iniciamos el tiempo
+                start_time = time.time()
+
+                # Ejecutamos Kmeans
+                km.fit()  # Ajustamos el K-means a los datos
+
+                # Finalizamos el tiempo
+                end_time = time.time()
+
+                # Calculamos el tiempo de convergencia
+                time_elapsed = end_time - start_time
+
+                # Guardamos los resultados
+                times.append(time_elapsed)
+
+            # Guardamos el tiempo promedio para cada método y K
+            method_times[method].append(np.mean(times))
+
+    # Graficamos los resultados
+    plt.figure(figsize=(10, 6))
+    for method in fitting_methods:
+        plt.plot(range(2, Kmax + 1), method_times[method], marker='o', linestyle='-', label=method)
+
+    plt.xlabel('Número de Centroides (k)')
+    plt.ylabel('Tiempo de Convergencia (s)')
+    plt.title('Tiempo de Convergencia vs Número de Centroides (k) para Diferentes Métodos')
     plt.legend()
+    plt.grid(True)
+    plt.show()
 
-    # Accuracy por imagen
-    plt.subplot(122)
-    plt.plot(range(1, len(smoothed_accuracies) + 1), smoothed_accuracies, marker='o', linestyle='-', color='green')
-    plt.axhline(y=avg_accuracy, color='red', linestyle='--', label=f'Avg Accuracy = {avg_accuracy:.2f}')
-    plt.title('Accuracy per Image')
-    plt.xlabel('Image Index')
-    plt.ylabel('Accuracy')
-    plt.legend()
+def Kmean_time_statistics_2(kmeans_class, imatges, Kmax):
+    # Métodos de ajuste
+    fitting_methods = ['WCD', 'ICD', 'FB', 'SF']
+    # Métodos de inicialización
+    init_methods = ['first', 'random', 'diagonal']
 
+    # Diccionario para almacenar los tiempos
+    method_times = {init_method: {fit_method: [] for fit_method in fitting_methods} for init_method in init_methods}
+
+    # Iteramos sobre cada valor de K
+    for K in range(2, Kmax + 1):
+        for init_method in init_methods:
+            for fit_method in fitting_methods:
+                times = []
+
+                for imatge in imatges:
+                    options = {
+                        'km_init': init_method,
+                        'tolerance': 0.2,
+                        'fitting': fit_method
+                    }
+                    km = kmeans_class(imatge, K, options)
+
+                    # Iniciamos el tiempo
+                    start_time = time.time()
+
+                    # Ejecutamos Kmeans
+                    km.fit()  # Ajustamos el K-means a los datos
+
+                    # Finalizamos el tiempo
+                    end_time = time.time()
+
+                    # Calculamos el tiempo de convergencia
+                    time_elapsed = end_time - start_time
+
+                    # Guardamos los resultados
+                    times.append(time_elapsed)
+
+                # Guardamos el tiempo promedio para cada método de inicialización y ajuste y K
+                method_times[init_method][fit_method].append(np.mean(times))
+
+    # Graficamos los resultados
+    plt.figure(figsize=(14, 8))
+    for init_method in init_methods:
+        for fit_method in fitting_methods:
+            label = f'Init: {init_method}, Fit: {fit_method}'
+            plt.plot(range(2, Kmax + 1), method_times[init_method][fit_method], marker='o', linestyle='-', label=label)
+
+    plt.xlabel('Número de Centroides (k)')
+    plt.ylabel('Tiempo de Convergencia (s)')
+    plt.title('Tiempo de Convergencia vs Número de Centroides (k) para Diferentes Métodos de Inicialización y Ajuste')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.grid(True)
     plt.tight_layout()
     plt.show()
 
-    return avg_centroids, avg_accuracy
+def Kmean_time_statistics_tolerance(kmeans_class, imatges, Kmax):
+    # Métodos de ajuste
+    fitting_methods = ['WCD', 'ICD', 'FB']
+    # Valores de tolerancia
+    tolerance_values = [0.05, 0.2, 0.35, 0.6, 0.75]
+
+    # Diccionario para almacenar los tiempos
+    method_times = {tol: {fit_method: [] for fit_method in fitting_methods} for tol in tolerance_values}
+
+    # Iteramos sobre cada valor de K
+    for K in range(2, Kmax + 1):
+        for tol in tolerance_values:
+            for fit_method in fitting_methods:
+                times = []
+
+                for imatge in imatges:
+                    options = {
+                        'km_init': 'first',
+                        'tolerance': tol,
+                        'fitting': fit_method
+                    }
+                    km = kmeans_class(imatge, K, options)
+
+                    # Iniciamos el tiempo
+                    start_time = time.time()
+
+                    # Ejecutamos Kmeans
+                    km.fit()  # Ajustamos el K-means a los datos
+
+                    # Finalizamos el tiempo
+                    end_time = time.time()
+
+                    # Calculamos el tiempo de convergencia
+                    time_elapsed = end_time - start_time
+
+                    # Guardamos los resultados
+                    times.append(time_elapsed)
+
+                # Guardamos el tiempo promedio para cada combinación de tolerancia y método de ajuste y K
+                method_times[tol][fit_method].append(np.mean(times))
+
+    # Graficamos los resultados
+    plt.figure(figsize=(14, 8))
+    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+    for i, tol in enumerate(tolerance_values):
+        for fit_method in fitting_methods:
+            label = f'Tol: {tol}, Fit: {fit_method}'
+            plt.plot(range(2, Kmax + 1), method_times[tol][fit_method], marker='o', linestyle='-', label=label, color=colors[i % len(colors)])
+
+    plt.xlabel('Número de Centroides (k)')
+    plt.ylabel('Tiempo de Convergencia (s)')
+    plt.title('Tiempo de Convergencia vs Número de Centroides (k) para Diferentes Tolerancias y Métodos de Ajuste')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+def Kmean_accuracy_statistics(kmeans_class, imatges, true_labels, Kmax):
+    # Métodos de ajuste
+    fitting_methods = ['WCD', 'ICD', 'FB', 'SF']
+    # Métodos de inicialización
+    init_methods = ['first', 'random', 'diagonal']
+
+    # Diccionario para almacenar las precisiones
+    accuracy_scores = {init_method: {fit_method: [] for fit_method in fitting_methods} for init_method in init_methods}
+
+    # Iteramos sobre cada valor de K
+    for K in range(2, Kmax + 1):
+        for init_method in init_methods:
+            for fit_method in fitting_methods:
+                accuracies = []
+
+                for imatge in imatges:
+                    options = {
+                        'km_init': init_method,
+                        'tolerance': 0.2,
+                        'fitting': fit_method
+                    }
+                    km = kmeans_class(imatge, K, options)
+
+                    # Ejecutamos Kmeans
+                    km.fit()  # Ajustamos el K-means a los datos
+
+                    # Obtenemos los colores de los centroides
+                    predicted_labels = get_colors(km.centroids)
+
+                    # Calculamos la precisión
+                    accuracies.append(Get_color_accuracy(predicted_labels, true_labels))
+
+                # Guardamos la precisión promedio para cada combinación de inicialización y método de ajuste y K
+                accuracy_scores[init_method][fit_method].append(np.mean(accuracies))
+
+    # Graficamos los resultados
+    plt.figure(figsize=(14, 8))
+    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+    for i, init_method in enumerate(init_methods):
+        for fit_method in fitting_methods:
+            label = f'Init: {init_method}, Fit: {fit_method}'
+            plt.plot(range(2, Kmax + 1), accuracy_scores[init_method][fit_method], marker='o', linestyle='-',
+                     label=label, color=colors[i % len(colors)])
+
+    plt.xlabel('Número de Centroides (k)')
+    plt.ylabel('Precisión (%)')
+    plt.title('Precisión vs Número de Centroides (k) para Diferentes Métodos de Inicialización y Ajuste')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+def Kmean_convergence_metrics(kmeans_class, imatges, Kmax):
+    # Métodos de ajuste
+    fitting_methods = ['WCD', 'ICD', 'FB', 'SF']
+
+    # Diccionario para almacenar las métricas
+    convergence_metrics = {fit_method: [] for fit_method in fitting_methods}
+
+    # Iteramos sobre cada valor de K
+    for K in range(2, Kmax + 1):
+        for fit_method in fitting_methods:
+            metrics = []
+
+            for imatge in imatges:
+                options = {
+                    'km_init': 'first',
+                    'tolerance': 0.2,
+                    'fitting': fit_method
+                }
+                km = kmeans_class(imatge, K, options)
+
+                # Ejecutamos Kmeans
+                km.fit()  # Ajustamos el K-means a los datos
+
+                # Obtenemos el valor de la métrica correspondiente
+                if fit_method == 'WCD':
+                    km.withinClassDistance()
+                    metric = km.WCD
+                elif fit_method == 'ICD':
+                    km.interClassDistance()
+                    metric = km.ICD
+                elif fit_method == 'FB':
+                    metric = km.fisherDiscriminant()
+                elif fit_method == 'SF':
+                    metric = km.silhouetteScore()
+                else:
+                    raise ValueError(f"Error con el método: {fit_method}")
+
+                metrics.append(metric)
+
+            # Guardamos el valor promedio de la métrica para el método de ajuste y K
+            convergence_metrics[fit_method].append(np.mean(metrics))
+
+    # Graficamos los resultados
+    plt.figure(figsize=(14, 8))
+    for fit_method in fitting_methods:
+        label = f'Método: {fit_method}'
+        plt.plot(range(2, Kmax + 1), convergence_metrics[fit_method], marker='o', linestyle='-', label=label)
+
+    plt.xlabel('Número de Centroides (k)')
+    plt.ylabel('Valor de la Métrica de Convergencia')
+    plt.title('Evolución de las Métricas de Convergencia vs Número de Centroides (k)')
+    plt.legend(loc='upper right')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
 
 
 def Get_shape_accuracy(predicted_labels, true_labels):
@@ -519,7 +770,11 @@ if __name__ == '__main__':
     #test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
     #Kmean_statistics(KMeans, imgs, len(colors))
     #Kmean_best_k(KMeans, imgs, len(colors))
-    Kmean_centroids_accuracy(KMeans, imgs, test_color_labels, len(colors))
+    #Kmean_centroids_accuracy(KMeans, imgs, color_labels, len(colors))
+    #Kmean_time_statistics_2(KMeans, imgs, len(colors))
+    #Kmean_time_statistics_tolerance(KMeans, imgs, len(colors))
+    #Kmean_accuracy_statistics(KMeans, imgs, color_labels, len(colors))ç
+    Kmean_convergence_metrics(KMeans, imgs, len(colors))
 
 #TEST RETRIEVAL BY SHAPE
     #test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
