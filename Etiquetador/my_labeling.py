@@ -6,6 +6,7 @@ from utils_data import read_dataset, read_extended_dataset, crop_images, Plot3DC
     visualize_retrieval
 import time
 import matplotlib.pyplot as plt
+from scipy.signal import savgol_filter
 import numpy as np
 from KNN import __authors__, __group__, KNN
 from utils import *
@@ -20,9 +21,9 @@ def Kmean_statistics(kmeans_class, imatges, Kmax):
 
     # Opciones Kmeans
     options = {
-        'km_init': 'random',
-        'tolerance': 0.0,
-        'fitting': 'FD'
+        'km_init': 'first',
+        'tolerance': 0.2,
+        'fitting': 'WCD'
     }
 
     # Iteramos sobre cada valor de K
@@ -86,7 +87,6 @@ def Kmean_statistics(kmeans_class, imatges, Kmax):
     plt.tight_layout()
     plt.show()
 
-
 def Kmean_best_k(kmeans_class, imatges, Kmax):
     # Variables para almacenar resultados
     all_fitting = []
@@ -133,28 +133,21 @@ def Kmean_best_k(kmeans_class, imatges, Kmax):
     print(f"Promedio de Iteraciones: {avg_iterations:.2f}")
     print(f"Promedio de Tiempo (s): {avg_times:.2f}")
 
-    # Diezmado para suavizar las curvas
-    def smooth_curve(points, factor=0.9):
-        smoothed_points = []
-        for point in points:
-            if smoothed_points:
-                previous = smoothed_points[-1]
-                smoothed_points.append(previous * factor + point * (1 - factor))
-            else:
-                smoothed_points.append(point)
-        return smoothed_points
+    # Suavizamos las curvas utilizando savgol_filter de SciPy
+    window_length = 5  # Tamaño de la ventana, debe ser un número impar
+    polyorder = 2      # Orden del polinomio para el filtro
 
-    smoothed_K = smooth_curve(all_K)
-    smoothed_iterations = smooth_curve(all_iterations)
-    smoothed_times = smooth_curve(all_times)
+    smoothed_K = savgol_filter(all_K, window_length, polyorder)
+    smoothed_iterations = savgol_filter(all_iterations, window_length, polyorder)
+    smoothed_times = savgol_filter(all_times, window_length, polyorder)
 
     # Graficamos los resultados individuales por imagen
     plt.figure(figsize=(16, 4))
 
     # Mejor K por imagen
     plt.subplot(131)
-    plt.plot(range(1, len(smoothed_K) + 1), smoothed_K, marker='o')
-    plt.axhline(y=avg_K, color='r', linestyle='--', label=f'Avg K = {avg_K:.2f}')
+    plt.plot(range(1, len(smoothed_K) + 1), smoothed_K, marker='o', linestyle='-', color='blue')
+    plt.axhline(y=avg_K, color='red', linestyle='--', label=f'Avg K = {avg_K:.2f}')
     plt.title('Best K per Image')
     plt.xlabel('Image Index')
     plt.ylabel('Best K')
@@ -162,8 +155,8 @@ def Kmean_best_k(kmeans_class, imatges, Kmax):
 
     # Iteraciones por imagen
     plt.subplot(132)
-    plt.plot(range(1, len(smoothed_iterations) + 1), smoothed_iterations, marker='o')
-    plt.axhline(y=avg_iterations, color='r', linestyle='--', label=f'Avg Iterations = {avg_iterations:.2f}')
+    plt.plot(range(1, len(smoothed_iterations) + 1), smoothed_iterations, marker='o', linestyle='-', color='green')
+    plt.axhline(y=avg_iterations, color='red', linestyle='--', label=f'Avg Iterations = {avg_iterations:.2f}')
     plt.title('Iterations per Image')
     plt.xlabel('Image Index')
     plt.ylabel('Iterations')
@@ -171,8 +164,8 @@ def Kmean_best_k(kmeans_class, imatges, Kmax):
 
     # Tiempo de convergencia por imagen
     plt.subplot(133)
-    plt.plot(range(1, len(smoothed_times) + 1), smoothed_times, marker='o')
-    plt.axhline(y=avg_times, color='r', linestyle='--', label=f'Avg Time = {avg_times:.2f}s')
+    plt.plot(range(1, len(smoothed_times) + 1), smoothed_times, marker='o', linestyle='-', color='purple')
+    plt.axhline(y=avg_times, color='red', linestyle='--', label=f'Avg Time = {avg_times:.2f}s')
     plt.title('Time to Converge per Image')
     plt.xlabel('Image Index')
     plt.ylabel('Time (s)')
