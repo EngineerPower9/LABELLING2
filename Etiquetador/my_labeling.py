@@ -7,6 +7,7 @@ from utils_data import read_dataset, read_extended_dataset, crop_images, Plot3DC
 import time
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
+from sklearn.metrics import accuracy_score
 import numpy as np
 from KNN import __authors__, __group__, KNN
 from utils import *
@@ -176,6 +177,79 @@ def Kmean_best_k(kmeans_class, imatges, Kmax):
 
     return avg_K
 
+def Kmean_centroids_accuracy(kmeans_class, imatges, true_labels, Kmax):
+    # Variables para almacenar resultados
+    all_centroids = []
+    all_accuracies = []
+
+    # Opciones Kmeans
+    options = {
+        'km_init': 'first',
+        'tolerance': 0.05,
+        'fitting': 'WCD'
+    }
+
+    for imatge, true_label in zip(imatges, true_labels):
+        km = kmeans_class(imatge, 1, options)
+
+        # Iniciamos el tiempo
+        start_time = time.time()
+
+        # Ejecutamos Kmeans para encontrar el mejor K
+        best_K = km.find_bestK(Kmax)
+
+        # Finalizamos el tiempo
+        end_time = time.time()
+
+        # Calculamos el tiempo de convergencia
+        time_elapsed = end_time - start_time
+
+        # Guardamos los resultados
+        all_centroids.append(best_K)
+        predicted_labels = get_colors(km.centroids)
+        accuracy = accuracy_score([true_label] * len(predicted_labels), predicted_labels)
+        all_accuracies.append(accuracy)
+
+    # Calculamos los promedios
+    avg_centroids = np.mean(all_centroids)
+    avg_accuracy = np.mean(all_accuracies)
+
+    print(f"El mejor valor promedio de K es: {avg_centroids:.2f}")
+    print(f"Promedio de Accuracy: {avg_accuracy:.2f}")
+
+    # Suavizamos las curvas utilizando savgol_filter de SciPy
+    window_length = 5  # Tamaño de la ventana, debe ser un número impar
+    polyorder = 2      # Orden del polinomio para el filtro
+
+    smoothed_centroids = savgol_filter(all_centroids, window_length, polyorder)
+    smoothed_accuracies = savgol_filter(all_accuracies, window_length, polyorder)
+
+    # Graficamos los resultados individuales por imagen
+    plt.figure(figsize=(16, 4))
+
+    # Cantidad de centroides por imagen
+    plt.subplot(121)
+    plt.plot(range(1, len(smoothed_centroids) + 1), smoothed_centroids, marker='o', linestyle='-', color='blue')
+    plt.axhline(y=avg_centroids, color='red', linestyle='--', label=f'Avg Centroids = {avg_centroids:.2f}')
+    plt.title('Centroids per Image')
+    plt.xlabel('Image Index')
+    plt.ylabel('Number of Centroids')
+    plt.legend()
+
+    # Accuracy por imagen
+    plt.subplot(122)
+    plt.plot(range(1, len(smoothed_accuracies) + 1), smoothed_accuracies, marker='o', linestyle='-', color='green')
+    plt.axhline(y=avg_accuracy, color='red', linestyle='--', label=f'Avg Accuracy = {avg_accuracy:.2f}')
+    plt.title('Accuracy per Image')
+    plt.xlabel('Image Index')
+    plt.ylabel('Accuracy')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+    return avg_centroids, avg_accuracy
+
 
 def Get_shape_accuracy(predicted_labels, true_labels):
     correct_values = 0
@@ -323,8 +397,6 @@ def test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, 
         labels = get_colors(km.centroids)
         labels_function.append(labels)
 
-    print(labels)
-
     # Recuperación por color
     query_color = "Red"
     k_neighbors_percentage = False
@@ -446,7 +518,8 @@ if __name__ == '__main__':
 # TEST RETRIEVAL BY COLOR
     #test_retrieval_by_color(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
     #Kmean_statistics(KMeans, imgs, len(colors))
-    Kmean_best_k(KMeans, imgs, len(colors))
+    #Kmean_best_k(KMeans, imgs, len(colors))
+    Kmean_centroids_accuracy(KMeans, imgs, test_color_labels, len(colors))
 
 #TEST RETRIEVAL BY SHAPE
     #test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
