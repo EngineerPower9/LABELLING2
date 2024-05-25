@@ -294,11 +294,10 @@ def test_test_retrieval_combined(train_imgs, train_class_labels, train_color_lab
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
     shape_labels = neighbours
     query_shape = "Dresses"
-    query_color = "Red"
+    query_color = "Pink"
     use_percentage = False
 
-    result_imgs, result_info = retrieval_combined(test_imgs, test_color_labels, shape_labels, query_color, query_shape,
-                                                  use_percentage)
+    result_imgs, result_info = retrieval_combined(test_imgs, test_color_labels, shape_labels, query_color, query_shape,use_percentage)
 
     # Visualización
     visualize_retrieval(result_imgs, 16, result_info, None, 'Combinados')
@@ -380,7 +379,7 @@ if __name__ == '__main__':
     #Kmean_statistics(KMeans, imgs, len(colors))
 
 #TEST RETRIEVAL BY SHAPE
-    test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+    #test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
 
 
 #TEST RETRIEVAL COMBINED
