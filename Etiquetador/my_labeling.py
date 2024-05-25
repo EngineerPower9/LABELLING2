@@ -253,7 +253,7 @@ def test_retrieval_by_shape(train_imgs, train_class_labels, train_color_labels, 
     imgsGray1 = rgb2gray(test_imgs)
 
     Knn_test = KNN(imgsGray, train_class_labels)
-    k = 15  # Por el momento
+    k = 2  # Por el momento
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
     shape_labels = neighbours
 
@@ -279,7 +279,7 @@ def test_test_retrieval_combined(train_imgs, train_class_labels, train_color_lab
     print(len(cropped_images))
     print(len(imgs))
     print(len(train_imgs))
-    for analize in imgs:
+    for analize in cropped_images:
         options = {}
         colors_list = []
         km = KMeans(analize)
@@ -290,7 +290,7 @@ def test_test_retrieval_combined(train_imgs, train_class_labels, train_color_lab
     imgsGray = rgb2gray(train_imgs)
     imgsGray1 = rgb2gray(test_imgs)
     Knn_test = KNN(imgsGray, train_class_labels)
-    k = 30  # Por el momento
+    k = 2
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
     shape_labels = neighbours
     query_shape = "Dresses"
@@ -301,14 +301,14 @@ def test_test_retrieval_combined(train_imgs, train_class_labels, train_color_lab
                                                   use_percentage)
 
     # Visualización
-    visualize_retrieval(result_imgs, 10, result_info, None, 'Combinados')
+    visualize_retrieval(result_imgs, 16, result_info, None, 'Combinados')
 
 def test_Get_shape_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
     imgsGray = rgb2gray(train_imgs)
     imgsGray1 = rgb2gray(test_imgs)
 
     Knn_test = KNN(imgsGray, train_class_labels)
-    k = 15  # Por el momento
+    k = 2
     neighbours = Knn_test.get_k_neighbours(imgsGray1, k)
     predicted_labels = Knn_test.get_class()
     accuracy = Get_shape_accuracy(predicted_labels, test_class_labels)
@@ -318,7 +318,7 @@ def test_Get_shape_accuracy(train_imgs, train_class_labels, train_color_labels, 
 
 def test_Get_color_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images):
     labels_function = []
-    for analize in imgs:
+    for analize in cropped_images:
         options = {}
         colors_list = []
         km = KMeans(analize)
@@ -387,10 +387,10 @@ if __name__ == '__main__':
     #test_test_retrieval_combined(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
 
 #TEST SHAPE_ACCURACY
-    #test_Get_shape_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+    test_Get_shape_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
 
 #Test COLOR ACCURACY
     #test_Get_color_accuracy(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
 
 #TEST BESTKFOR KNN
-    getBestKforKNN(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
+    #getBestKforKNN(train_imgs, train_class_labels, train_color_labels, test_imgs, test_class_labels, test_color_labels, classes, imgs, class_labels, color_labels, upper, lower, background, cropped_images)
